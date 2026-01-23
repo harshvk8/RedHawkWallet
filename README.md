@@ -1,7 +1,7 @@
 
 
 
-Do passwords in ONE place only: the Android app:
+Do passwords in ONE place only: the Android app
 Website: Will work on it when we complete the App
 1) register interest/email + role
 2) download APK
