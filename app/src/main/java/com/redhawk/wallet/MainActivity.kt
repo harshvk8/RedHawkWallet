@@ -17,6 +17,9 @@ import androidx.compose.ui.Modifier
 import com.redhawk.wallet.nfc.NfcManager
 import com.redhawk.wallet.nfc.NfcResult
 import com.redhawk.wallet.ui.theme.RedHawkWalletTheme
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
+import com.redhawk.wallet.nfc.NfcRepository
 
 class MainActivity : ComponentActivity() {
 
@@ -26,6 +29,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        Log.e("NFC_TEST", "MainActivity started")
 
         nfcManager = NfcManager(this)
 
@@ -33,6 +37,19 @@ class MainActivity : ComponentActivity() {
             !nfcManager.isNfcSupported() -> "NFC: Not supported on this device"
             !nfcManager.isNfcEnabled() -> "NFC: Supported but OFF (turn it ON in settings)"
             else -> "NFC: Ready — tap a tag/card"
+        }
+
+
+        // ✅ TEMP TEST: Seed offline tokens (simulate "download tokens when online")
+        val repo = NfcRepository(this)
+
+        lifecycleScope.launch {
+            repo.fetchOfflineTokens(
+                userId = "demoUser123",
+                count = 5,
+                amountCents = 200
+            )
+            Log.d("NFC_TEST", "Tokens seeded. Available = ${repo.availableTokenCount()}")
         }
 
         setContent {
@@ -46,6 +63,7 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
 
     override fun onResume() {
         super.onResume()
