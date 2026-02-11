@@ -10,7 +10,7 @@ private val LightColors = lightColorScheme(
     background = BackgroundLight,
     error = ErrorRed
 )
-
+// Harsh
 @Composable
 fun RedHawkWalletTheme(
     content: @Composable () -> Unit

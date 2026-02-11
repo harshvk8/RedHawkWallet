@@ -9,7 +9,7 @@ val AppTypography = Typography(
     headlineSmall = TextStyle(
         fontSize = 22.sp,
         fontWeight = FontWeight.SemiBold
-    ),
+    ),   // harshaaaaa
     bodyMedium = TextStyle(
         fontSize = 16.sp
     ),
