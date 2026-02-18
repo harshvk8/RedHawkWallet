@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import com.redhawk.wallet.R
 
 @Composable
+//Rohaifa
 fun RegisterScreen(
     onRegisterClick: (name: String, studentId: String, email: String, password: String) -> Unit,
     onBackToLoginClick: () -> Unit

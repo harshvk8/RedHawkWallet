@@ -7,7 +7,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.redhawk.wallet.ui.components.PrimaryButton
-
+//Rohaifa
 @Composable
 fun ReceiptScreen(
     amount: String,
