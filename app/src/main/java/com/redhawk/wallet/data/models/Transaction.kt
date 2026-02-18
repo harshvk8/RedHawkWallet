@@ -1,4 +1,4 @@
-package com.redhawk.wallet.data.model
+package com.redhawk.wallet.data.models
 
 data class Transaction(
     val id: String = "",

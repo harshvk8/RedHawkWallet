@@ -1,7 +1,7 @@
 package com.redhawk.wallet.data.repository
 
 import com.redhawk.wallet.data.datasource.FirestoreDataSource
-import com.redhawk.wallet.data.model.Transaction
+import com.redhawk.wallet.data.models.Transaction
 
 class TransactionRepository(
     private val firestore: FirestoreDataSource
