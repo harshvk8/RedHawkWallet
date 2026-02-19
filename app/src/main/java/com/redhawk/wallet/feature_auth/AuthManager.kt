@@ -3,6 +3,7 @@ package com.redhawk.wallet.feature_auth
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 
+
 class AuthManager {
 
     // Firebase instance
