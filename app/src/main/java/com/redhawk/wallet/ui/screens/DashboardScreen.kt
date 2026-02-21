@@ -1,31 +1,31 @@
 package com.redhawk.wallet.ui.screens
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.redhawk.wallet.ui.screens.components.TransactionItem
 import com.redhawk.wallet.ui.screens.components.WalletCard
 
 @Composable
-fun DashboardScreen(navController: NavController) {
-
+fun DashboardScreen(
+    navController: NavController
+) {
     Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp)
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
     ) {
 
-        WalletCard(
-            balance = "$2,450",
-            cardHolder = "Ati"
-        )
+        WalletCard(balance = "$120.00")
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Text("Recent Transactions")
-
-        TransactionItem("Starbucks", "-$5.99", "Feb 20")
-        TransactionItem("Amazon", "-$120", "Feb 18")
+        Button(onClick = {
+            navController.navigate("transactions")
+        }) {
+            Text("View Transactions")
+        }
     }
 }
