@@ -1,48 +1,31 @@
-package com.redhawk.wallet.ui.screens
-
+package com.redhawk.wallet.ui
 
 import androidx.compose.runtime.Composable
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
+import androidx.navigation.compose.*
+import com.redhawk.wallet.ui.screens.DashboardScreen
 import com.redhawk.wallet.ui.screens.LoginScreen
-import com.redhawk.wallet.ui.screens.RegisterScreen
-
-object Routes {
-    const val LOGIN = "login"
-    const val REGISTER = "register"
-}
+import com.redhawk.wallet.ui.screens.TransactionHistoryScreen
 
 @Composable
 fun AppNav() {
+
     val navController = rememberNavController()
 
     NavHost(
         navController = navController,
-        startDestination = Routes.LOGIN
+        startDestination = "login"
     ) {
-        composable(Routes.LOGIN) {
-            LoginScreen(
-                onLoginClick = { email, password ->
-                    // TODO: handle login
-                },
-                onSignUpClick = {
-                    navController.navigate(Routes.REGISTER)
-                }
-            )
+
+        composable("login") {
+            LoginScreen(navController)
         }
 
-        composable(Routes.REGISTER) {
-            RegisterScreen(
-                onRegisterClick = { name, studentId, email, password ->
-                    // TODO: handle register
-                    // After successful register go back to login:
-                    navController.popBackStack()
-                },
-                onBackToLoginClick = {
-                    navController.popBackStack()
-                }
-            )
+        composable("dashboard") {
+            DashboardScreen(navController)
+        }
+
+        composable("transactions") {
+            TransactionHistoryScreen()
         }
     }
 }
