@@ -10,6 +10,10 @@ plugins {
 
 android {
     namespace = "com.redhawk.wallet"
+
+    compileSdk {
+        version = release(36)
+    }
     compileSdk = 34
 
     defaultConfig {
@@ -61,6 +65,8 @@ dependencies {
 
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+    implementation("com.google.zxing:core:3.5.3")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
     implementation(platform("com.google.firebase:firebase-bom:34.9.0"))
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-analytics")

@@ -10,8 +10,9 @@ import com.redhawk.wallet.ui.screens.AppNav
 //=======
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
+import androidx.compose.ui.Modifier
+import com.redhawk.wallet.qr.QrIdScreen
 import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -26,6 +27,7 @@ import kotlinx.coroutines.launch
 import com.redhawk.wallet.nfc.NfcRepository
 
 class MainActivity : ComponentActivity() {
+    @Suppress("UnusedMaterial3ScaffoldPaddingParameter")
 
     private lateinit var nfcManager: NfcManager
     private var nfcStatus by mutableStateOf("NFC: Waiting...")
@@ -42,6 +44,18 @@ class MainActivity : ComponentActivity() {
 }
 //=======
         enableEdgeToEdge()
+
+        setContent {
+            RedHawkWalletTheme {
+                Scaffold(
+                    modifier = Modifier.fillMaxSize()
+                ) { _ ->
+                    QrIdScreen()
+                }
+            }
+        }
+    }
+}
         Log.e("NFC_TEST", "MainActivity started")
 
         nfcManager = NfcManager(this)
