@@ -1,6 +1,11 @@
 plugins {
     alias(libs.plugins.android.application)
+//<<<<<<< feature-ui
     alias(libs.plugins.kotlin.android)
+=======
+    alias(libs.plugins.kotlin.compose)
+    id("com.google.gms.google-services")
+//>>>>>>> dev
 }
 
 android {
@@ -34,7 +39,13 @@ android {
 }
 
 dependencies {
+//<<<<<<< feature-ui
 
+=======
+    implementation(platform("com.google.firebase:firebase-bom:34.8.0"))
+    implementation("com.google.firebase:firebase-analytics")
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
+//>>>>>>> dev
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
