@@ -4,14 +4,24 @@ import android.content.Context
 import org.json.JSONArray
 import org.json.JSONObject
 
-class NfcRepository(private val context: Context) {
+class NfcRepository(context: Context) {
 
     private val tokenStore = TokenStore(context)
+
+    private fun getAvailableArray(): JSONArray {
+        val raw = tokenStore.getAvailableTokensJson()
+        return if (raw.isNullOrBlank()) JSONArray() else JSONArray(raw)
+    }
+
+    private fun getUsedArray(): JSONArray {
+        val raw = tokenStore.getUsedTokensJson()
+        return if (raw.isNullOrBlank()) JSONArray() else JSONArray(raw)
+    }
 
     /**
      * STEP 1 (ONLINE):
      * Fetch offline tokens from backend.
-     * For now, we simulate this (demo tokens).
+     * For now, we simulate demo tokens.
      */
     suspend fun fetchOfflineTokens(
         userId: String,
@@ -40,10 +50,10 @@ class NfcRepository(private val context: Context) {
     /**
      * STEP 2 (OFFLINE):
      * Consume ONE token during NFC tap.
-     * This is what the card (HCE) sends to terminal.
+     * This is what HCE sends to the terminal.
      */
     fun consumeTokenOfflineJson(): String? {
-        val available = JSONArray(tokenStore.getAvailableTokensJson())
+        val available = getAvailableArray()
         if (available.length() == 0) return null
 
         val token = available.getJSONObject(0)
@@ -56,7 +66,7 @@ class NfcRepository(private val context: Context) {
         tokenStore.setAvailableTokensJson(remaining.toString())
 
         // Add to used queue
-        val used = JSONArray(tokenStore.getUsedTokensJson())
+        val used = getUsedArray()
         used.put(token)
         tokenStore.setUsedTokensJson(used.toString())
 
@@ -77,7 +87,7 @@ class NfcRepository(private val context: Context) {
      * Sync used tokens with backend (deduct balance).
      */
     suspend fun syncUsedTokens(userId: String) {
-        val used = JSONArray(tokenStore.getUsedTokensJson())
+        val used = getUsedArray()
 
         for (i in 0 until used.length()) {
             val token = used.getJSONObject(i)
@@ -100,6 +110,6 @@ class NfcRepository(private val context: Context) {
     }
 
     fun availableTokenCount(): Int {
-        return JSONArray(tokenStore.getAvailableTokensJson()).length()
+        return getAvailableArray().length()
     }
 }

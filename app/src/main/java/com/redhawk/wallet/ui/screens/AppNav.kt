@@ -1,16 +1,9 @@
-package com.redhawk.wallet.ui.screens
+package com.redhawk.wallet
 
 import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-
-object Routes {
-    const val LOGIN = "login"
-    const val REGISTER = "register"
-    const val DASHBOARD = "dashboard"
-    const val TRANSACTIONS = "transactions"
-}
 
 @Composable
 fun AppNav() {
@@ -18,43 +11,19 @@ fun AppNav() {
 
     NavHost(
         navController = navController,
-        startDestination = Routes.LOGIN
+        startDestination = "home"
     ) {
-
-        composable(Routes.LOGIN) {
-            LoginScreen(
-                onLoginClick = { email, password ->
-                    // TODO: connect Firebase auth later.
-                    // For now, navigate to dashboard.
-                    navController.navigate(Routes.DASHBOARD)
-                },
-                onSignUpClick = {
-                    navController.navigate(Routes.REGISTER)
-                }
-            )
+        composable("home") {
+            // TODO: replace with your real screen composable
+            // Example: HomeScreen(navController)
         }
 
-        composable(Routes.REGISTER) {
-            RegisterScreen(
-                onRegisterClick = { name, studentId, email, password ->
-                    // TODO: connect Firebase register later.
-                    // For now, go back to login after "register".
-                    navController.popBackStack()
-                },
-                onBackToLoginClick = {
-                    navController.popBackStack()
-                }
-            )
+        composable("qr") {
+            // TODO: replace with your real QR screen
         }
 
-        composable(Routes.DASHBOARD) {
-            DashboardScreen(navController)
-        }
-
-        composable(Routes.TRANSACTIONS) {
-            TransactionHistoryScreen(
-                onBack = { navController.popBackStack() }
-            )
+        composable("nfc") {
+            // TODO: replace with your real NFC screen
         }
     }
 }
