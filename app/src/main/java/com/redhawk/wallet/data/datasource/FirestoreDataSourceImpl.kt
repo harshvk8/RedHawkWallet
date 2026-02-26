@@ -1,43 +1,274 @@
 package com.redhawk.wallet.data.datasource
 
+import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.QuerySnapshot
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
-class FirestoreDataSourceImpl(
-    private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
-) : FirestoreDataSource {
+class FirestoreDataSourceImpl {
+    private val db = FirebaseFirestore.getInstance()
 
-    override suspend fun setDocument(path: String, data: Any) {
-        require(path.isNotBlank()) { "path cannot be blank" }
-        firestore.document(path).set(data).await()
+    suspend fun setDocument(path: String, data: Map<String, Any?>): Boolean {
+        return withContext(Dispatchers.IO) {
+            try {
+                val pathParts = path.split("/")
+                when (pathParts.size) {
+                    2 -> {
+                        db.collection(pathParts[0])
+                            .document(pathParts[1])
+                            .set(data)
+                            .await()
+                        true
+                    }
+                    4 -> {
+                        db.collection(pathParts[0])
+                            .document(pathParts[1])
+                            .collection(pathParts[2])
+                            .document(pathParts[3])
+                            .set(data)
+                            .await()
+                        true
+                    }
+                    else -> false
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                false
+            }
+        }
     }
 
-    override suspend fun <T> getDocument(path: String, clazz: Class<T>): T? {
-        require(path.isNotBlank()) { "path cannot be blank" }
-        val snap = firestore.document(path).get().await()
-        return if (snap.exists()) snap.toObject(clazz) else null
+    suspend fun getDocument(path: String): DocumentSnapshot? {
+        return withContext(Dispatchers.IO) {
+            try {
+                val pathParts = path.split("/")
+                when (pathParts.size) {
+                    2 -> {
+                        db.collection(pathParts[0])
+                            .document(pathParts[1])
+                            .get()
+                            .await()
+                    }
+                    4 -> {
+                        db.collection(pathParts[0])
+                            .document(pathParts[1])
+                            .collection(pathParts[2])
+                            .document(pathParts[3])
+                            .get()
+                            .await()
+                    }
+                    else -> null
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                null
+            }
+        }
     }
 
-    override suspend fun updateFields(path: String, fields: Map<String, Any?>) {
-        require(path.isNotBlank()) { "path cannot be blank" }
-        require(fields.isNotEmpty()) { "fields cannot be empty" }
-        firestore.document(path).update(fields).await()
+    suspend fun addDocument(collectionPath: String, data: Map<String, Any?>): String? {
+        return withContext(Dispatchers.IO) {
+            try {
+                val pathParts = collectionPath.split("/")
+                val docRef = when (pathParts.size) {
+                    1 -> {
+                        // Simple collection: "users"
+                        db.collection(pathParts[0])
+                            .add(data)
+                            .await()
+                    }
+                    3 -> {
+                        // Subcollection: "transactions/uid123/items"
+                        db.collection(pathParts[0])
+                            .document(pathParts[1])
+                            .collection(pathParts[2])
+                            .add(data)
+                            .await()
+                    }
+                    else -> return@withContext null
+                }
+                docRef.id
+            } catch (e: Exception) {
+                e.printStackTrace()
+                null
+            }
+        }
     }
 
-    override suspend fun addDocument(collectionPath: String, data: Any): String {
-        require(collectionPath.isNotBlank()) { "collectionPath cannot be blank" }
-        val docRef = firestore.collection(collectionPath).add(data).await()
-        return docRef.id
+    suspend fun getCollection(collectionPath: String): QuerySnapshot? {
+        return withContext(Dispatchers.IO) {
+            try {
+                val pathParts = collectionPath.split("/")
+                when (pathParts.size) {
+                    1 -> {
+                        // Simple collection: "users"
+                        db.collection(pathParts[0])
+                            .get()
+                            .await()
+                    }
+                    3 -> {
+                        // Subcollection: "transactions/uid123/items"
+                        db.collection(pathParts[0])
+                            .document(pathParts[1])
+                            .collection(pathParts[2])
+                            .get()
+                            .await()
+                    }
+                    else -> null
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                null
+            }
+        }
     }
 
-    override suspend fun <T> getCollection(collectionPath: String, clazz: Class<T>): List<T> {
-        require(collectionPath.isNotBlank()) { "collectionPath cannot be blank" }
-        val snap = firestore.collection(collectionPath).get().await()
-        return snap.documents.mapNotNull { it.toObject(clazz) }
+    suspend fun updateFields(path: String, fields: Map<String, Any?>): Boolean {
+        return withContext(Dispatchers.IO) {
+            try {
+                val pathParts = path.split("/")
+                when (pathParts.size) {
+                    2 -> {
+                        // Document in collection: "users/uid123"
+                        db.collection(pathParts[0])
+                            .document(pathParts[1])
+                            .update(fields)
+                            .await()
+                        true
+                    }
+                    4 -> {
+                        // Document in subcollection: "transactions/uid123/items/itemId"
+                        db.collection(pathParts[0])
+                            .document(pathParts[1])
+                            .collection(pathParts[2])
+                            .document(pathParts[3])
+                            .update(fields)
+                            .await()
+                        true
+                    }
+                    else -> false
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                false
+            }
+        }
     }
 
-    override suspend fun deleteDocument(documentPath: String) {
-        require(documentPath.isNotBlank()) { "documentPath cannot be blank" }
-        firestore.document(documentPath).delete().await()
+    suspend fun deleteDocument(path: String): Boolean {
+        return withContext(Dispatchers.IO) {
+            try {
+                val pathParts = path.split("/")
+                when (pathParts.size) {
+                    2 -> {
+                        db.collection(pathParts[0])
+                            .document(pathParts[1])
+                            .delete()
+                            .await()
+                        true
+                    }
+                    4 -> {
+                        db.collection(pathParts[0])
+                            .document(pathParts[1])
+                            .collection(pathParts[2])
+                            .document(pathParts[3])
+                            .delete()
+                            .await()
+                        true
+                    }
+                    else -> false
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                false
+            }
+        }
+    }
+
+    suspend fun checkEmailExists(email: String): Boolean {
+        return withContext(Dispatchers.IO) {
+            try {
+                val result = db.collection("users")
+                    .whereEqualTo("email", email)
+                    .limit(1)
+                    .get()
+                    .await()
+                !result.isEmpty
+            } catch (e: Exception) {
+                e.printStackTrace()
+                false
+            }
+        }
+    }
+
+    suspend fun checkStudentIdExists(studentId: String): Boolean {
+        return withContext(Dispatchers.IO) {
+            try {
+                val result = db.collection("users")
+                    .whereEqualTo("studentId", studentId)
+                    .limit(1)
+                    .get()
+                    .await()
+                !result.isEmpty
+            } catch (e: Exception) {
+                e.printStackTrace()
+                false
+            }
+        }
+    }
+
+    suspend fun addTransactionToUser(uid: String, transaction: Map<String, Any?>): String? {
+        return withContext(Dispatchers.IO) {
+            try {
+                val docRef = db.collection("transactions")
+                    .document(uid)
+                    .collection("items")
+                    .add(transaction)
+                    .await()
+                docRef.id
+            } catch (e: Exception) {
+                e.printStackTrace()
+                null
+            }
+        }
+    }
+
+    suspend fun getUserTransactions(uid: String): QuerySnapshot? {
+        return withContext(Dispatchers.IO) {
+            try {
+                db.collection("transactions")
+                    .document(uid)
+                    .collection("items")
+                    .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING)
+                    .get()
+                    .await()
+            } catch (e: Exception) {
+                e.printStackTrace()
+                null
+            }
+        }
+    }
+
+    suspend fun checkDocumentExists(path: String): Boolean {
+        return withContext(Dispatchers.IO) {
+            try {
+                val pathParts = path.split("/")
+                val doc = when (pathParts.size) {
+                    2 -> {
+                        db.collection(pathParts[0])
+                            .document(pathParts[1])
+                            .get()
+                            .await()
+                    }
+                    else -> null
+                }
+                doc?.exists() ?: false
+            } catch (e: Exception) {
+                e.printStackTrace()
+                false
+            }
+        }
     }
 }

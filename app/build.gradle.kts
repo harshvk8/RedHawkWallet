@@ -1,115 +1,81 @@
-package com.redhawk.wallet.nfc
+plugins {
+    id("com.android.application")
+    id("org.jetbrains.kotlin.android")
+    id("com.google.gms.google-services")
+}
 
-import android.content.Context
-import org.json.JSONArray
-import org.json.JSONObject
+android {
+    namespace = "com.redhawk.wallet"
+    compileSdk = 34
 
-class NfcRepository(context: Context) {
+    defaultConfig {
+        applicationId = "com.redhawk.wallet"
+        minSdk = 24
+        targetSdk = 34
+        versionCode = 1
+        versionName = "1.0"
 
-    private val tokenStore = TokenStore(context)
-
-    private fun getAvailableArray(): JSONArray {
-        val raw = tokenStore.getAvailableTokensJson()
-        return if (raw.isNullOrBlank()) JSONArray() else JSONArray(raw)
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    private fun getUsedArray(): JSONArray {
-        val raw = tokenStore.getUsedTokensJson()
-        return if (raw.isNullOrBlank()) JSONArray() else JSONArray(raw)
-    }
-
-    /**
-     * STEP 1 (ONLINE):
-     * Fetch offline tokens from backend.
-     * For now, we simulate demo tokens.
-     */
-    suspend fun fetchOfflineTokens(
-        userId: String,
-        count: Int,
-        amountCents: Int
-    ) {
-        val tokens = JSONArray()
-
-        repeat(count) { idx ->
-            tokens.put(
-                JSONObject().apply {
-                    put("tokenId", "token_${System.currentTimeMillis()}_$idx")
-                    put("userId", userId)
-                    put("amountCents", amountCents)
-                    put("issuedAt", System.currentTimeMillis())
-                    put("expiresAt", System.currentTimeMillis() + 7L * 24 * 60 * 60 * 1000) // 7 days
-                    put("signature", "MOCK_SIGNATURE")
-                }
+    buildTypes {
+        release {
+            isMinifyEnabled = false
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
             )
         }
-
-        tokenStore.setAvailableTokensJson(tokens.toString())
-        tokenStore.setUsedTokensJson("[]")
     }
 
-    /**
-     * STEP 2 (OFFLINE):
-     * Consume ONE token during NFC tap.
-     * This is what HCE sends to the terminal.
-     */
-    fun consumeTokenOfflineJson(): String? {
-        val available = getAvailableArray()
-        if (available.length() == 0) return null
-
-        val token = available.getJSONObject(0)
-
-        // Remove from available list
-        val remaining = JSONArray()
-        for (i in 1 until available.length()) {
-            remaining.put(available.getJSONObject(i))
-        }
-        tokenStore.setAvailableTokensJson(remaining.toString())
-
-        // Add to used queue
-        val used = getUsedArray()
-        used.put(token)
-        tokenStore.setUsedTokensJson(used.toString())
-
-        // Build SpendRequest JSON
-        val spendRequest = JSONObject().apply {
-            put("tokenId", token.getString("tokenId"))
-            put("userId", token.getString("userId"))
-            put("amountCents", token.getInt("amountCents"))
-            put("timestamp", System.currentTimeMillis())
-            put("signature", token.getString("signature"))
-        }
-
-        return spendRequest.toString()
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
-    /**
-     * STEP 3 (ONLINE LATER):
-     * Sync used tokens with backend (deduct balance).
-     */
-    suspend fun syncUsedTokens(userId: String) {
-        val used = getUsedArray()
-
-        for (i in 0 until used.length()) {
-            val token = used.getJSONObject(i)
-            saveTransaction(token)
-        }
-
-        // Clear used queue after sync
-        tokenStore.setUsedTokensJson("[]")
+    kotlinOptions {
+        jvmTarget = "17"
     }
 
-    /**
-     * Save transaction (backend later)
-     */
-    private fun saveTransaction(token: JSONObject) {
-        // TODO:
-        // POST /nfc/pay
-        // validate token
-        // deduct balance
-        // store transaction
+    buildFeatures {
+        compose = true
     }
 
-    fun availableTokenCount(): Int {
-        return getAvailableArray().length()
+    composeOptions {
+        kotlinCompilerExtensionVersion = "1.5.10"
     }
+}
+
+dependencies {
+    // Firebase
+    implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
+    implementation("com.google.firebase:firebase-auth-ktx")
+    implementation("com.google.firebase:firebase-firestore-ktx")
+    implementation("com.google.firebase:firebase-storage-ktx")
+
+    // Android Core
+    implementation("androidx.core:core-ktx:1.12.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
+    implementation("androidx.activity:activity-compose:1.8.2")
+
+    // Compose
+    implementation(platform("androidx.compose:compose-bom:2024.02.00"))
+    implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.ui:ui-graphics")
+    implementation("androidx.compose.ui:ui-tooling-preview")
+    implementation("androidx.compose.material3:material3")
+
+    // Coroutines
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
+
+    // Navigation
+    implementation("androidx.navigation:navigation-compose:2.7.6")
+
+    // Testing
+    testImplementation("junit:junit:4.13.2")
+    androidTestImplementation("androidx.test.ext:junit:1.1.5")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+    debugImplementation("androidx.compose.ui:ui-tooling")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
 }

@@ -3,25 +3,39 @@ package com.redhawk.wallet.data.repository
 import com.redhawk.wallet.data.datasource.FirestoreDataSource
 import com.redhawk.wallet.data.models.Wallet
 
-class WalletRepository(
-    private val firestore: FirestoreDataSource
-) {
-    // wallets/{uid}
-    private fun walletPath(uid: String) = "wallets/$uid"
+class WalletRepository {
+    private val dataSource = FirestoreDataSource()
 
     suspend fun getWallet(uid: String): Wallet? {
-        require(uid.isNotBlank()) { "uid cannot be blank" }
-        return firestore.getDocument(walletPath(uid), Wallet::class.java)
+        val doc = dataSource.getDocument("wallets/$uid")
+        return if (doc != null && doc.exists()) {
+            val data = doc.data
+            if (data != null) {
+                Wallet.fromMap(data)
+            } else {
+                null
+            }
+        } else {
+            null
+        }
     }
 
-    suspend fun updateWalletBalance(uid: String, newBalance: Double) {
-        require(uid.isNotBlank()) { "uid cannot be blank" }
+    suspend fun createWalletIfMissing(uid: String): Boolean {
+        val existing = getWallet(uid)
+        return if (existing == null) {
+            val newWallet = Wallet(uid = uid, balance = 100.0)
+            dataSource.setDocument("wallets/$uid", newWallet.toMap())
+        } else {
+            true
+        }
+    }
 
-        firestore.updateFields(
-            path = walletPath(uid),
-            fields = mapOf(
+    suspend fun updateWalletBalance(uid: String, newBalance: Double): Boolean {
+        return dataSource.updateFields(
+            "wallets/$uid",
+            mapOf(
                 "balance" to newBalance,
-                "updatedAt" to System.currentTimeMillis()
+                "lastUpdated" to System.currentTimeMillis()
             )
         )
     }

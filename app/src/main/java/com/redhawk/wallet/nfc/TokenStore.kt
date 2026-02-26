@@ -1,41 +1,30 @@
 package com.redhawk.wallet.nfc
 
 import android.content.Context
-import androidx.security.crypto.EncryptedSharedPreferences
-import androidx.security.crypto.MasterKey
+import android.content.SharedPreferences
 
-class TokenStore(context: Context) {
+class TokenStore(private val context: Context) {
 
-    private val masterKey = MasterKey.Builder(context)
-        .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-        .build()
-
-    private val prefs = EncryptedSharedPreferences.create(
-        context,
-        "redhawk_secure_prefs",
-        masterKey,
-        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-    )
+    private val prefs: SharedPreferences =
+        context.getSharedPreferences("token_store", Context.MODE_PRIVATE)
 
     fun setAvailableTokensJson(json: String) {
-        prefs.edit().putString(KEY_AVAILABLE_TOKENS, json).apply()
+        prefs.edit().putString("available_tokens", json).apply()
     }
 
     fun getAvailableTokensJson(): String {
-        return prefs.getString(KEY_AVAILABLE_TOKENS, "[]") ?: "[]"
+        return prefs.getString("available_tokens", "[]") ?: "[]"
     }
 
     fun setUsedTokensJson(json: String) {
-        prefs.edit().putString(KEY_USED_TOKENS, json).apply()
+        prefs.edit().putString("used_tokens", json).apply()
     }
 
     fun getUsedTokensJson(): String {
-        return prefs.getString(KEY_USED_TOKENS, "[]") ?: "[]"
+        return prefs.getString("used_tokens", "[]") ?: "[]"
     }
 
-    companion object {
-        private const val KEY_AVAILABLE_TOKENS = "available_tokens_json"
-        private const val KEY_USED_TOKENS = "used_tokens_json"
+    fun clearTokens() {
+        prefs.edit().clear().apply()
     }
 }
