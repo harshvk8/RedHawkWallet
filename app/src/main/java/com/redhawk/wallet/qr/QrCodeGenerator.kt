@@ -7,9 +7,6 @@ import com.google.zxing.MultiFormatWriter
 
 object QrCodeGenerator {
 
-    /**
-     * Generates a QR code bitmap from the given text.
-     */
     fun generateQrBitmap(text: String, size: Int = 700): Bitmap {
         require(text.isNotBlank()) { "QR text cannot be blank" }
 

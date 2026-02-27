@@ -40,7 +40,8 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             RedHawkWalletTheme {
-                AppNav() // ✅ Central navigation entry
+                val navController = androidx.navigation.compose.rememberNavController()
+                AppNav(navController = navController)
             }
         }
     }

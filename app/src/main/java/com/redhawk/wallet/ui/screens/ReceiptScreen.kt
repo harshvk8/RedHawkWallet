@@ -28,7 +28,7 @@ fun ReceiptScreen(
         modifier = Modifier
             .fillMaxSize()
             .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally//
     ) {
         Text(
             text = "Payment Receipt",

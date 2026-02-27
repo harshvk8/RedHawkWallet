@@ -63,7 +63,7 @@ fun NfcResultScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Icon(
-                        imageVector = Icons.Filled.CheckCircle,
+                        imageVector = Icons.Filled.CheckCircle,//
                         contentDescription = "Success",
                         tint = Color(0xFF2E7D32), // Green
                         modifier = Modifier.size(120.dp)

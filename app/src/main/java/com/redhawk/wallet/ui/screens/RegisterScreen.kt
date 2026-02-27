@@ -1,5 +1,7 @@
 package com.redhawk.wallet.ui.screens
 
+import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -8,11 +10,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import com.redhawk.wallet.R
 
 private fun isValidName(name: String): Boolean {
@@ -38,6 +43,10 @@ fun RegisterScreen(
     onRegisterClick: (name: String, studentId: String, email: String, password: String) -> Unit,
     onBackToLoginClick: () -> Unit
 ) {
+    val context = LocalContext.current
+    val auth = remember { FirebaseAuth.getInstance() }
+    val db = remember { FirebaseFirestore.getInstance() }
+
     var name by remember { mutableStateOf("") }
     var studentId by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
@@ -51,6 +60,9 @@ fun RegisterScreen(
 
     var passwordVisible by remember { mutableStateOf(false) }
     var confirmPasswordVisible by remember { mutableStateOf(false) }
+
+    var isRegistering by remember { mutableStateOf(false) }
+    var registerError by remember { mutableStateOf<String?>(null) }
 
     val hasCapitalLetter = password.any { it.isUpperCase() }
     val hasNumber = password.any { it.isDigit() }
@@ -105,9 +117,7 @@ fun RegisterScreen(
             label = { Text("Full Name") },
             singleLine = true,
             isError = nameError,
-            supportingText = {
-                if (nameError) Text("Name must contain letters only")
-            },
+            supportingText = { if (nameError) Text("Name must contain letters only") },
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -127,9 +137,7 @@ fun RegisterScreen(
             label = { Text("Student ID (M########)") },
             singleLine = true,
             isError = studentIdError,
-            supportingText = {
-                if (studentIdError) Text("Must start with M + 8 digits (ex: M12345678)")
-            },
+            supportingText = { if (studentIdError) Text("Must start with M + 8 digits (ex: M12345678)") },
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -145,9 +153,7 @@ fun RegisterScreen(
             label = { Text("Email (@montclair.edu)") },
             singleLine = true,
             isError = emailError,
-            supportingText = {
-                if (emailError) Text("Email must end with @montclair.edu")
-            },
+            supportingText = { if (emailError) Text("Email must end with @montclair.edu") },
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -192,9 +198,7 @@ fun RegisterScreen(
             label = { Text("Confirm Password") },
             singleLine = true,
             isError = passwordMatchError,
-            supportingText = {
-                if (passwordMatchError) Text("Passwords do not match")
-            },
+            supportingText = { if (passwordMatchError) Text("Passwords do not match") },
             visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
             trailingIcon = {
                 TextButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
@@ -206,36 +210,88 @@ fun RegisterScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
+        // Show error text if any
+        if (!registerError.isNullOrBlank()) {
+            Text(
+                text = registerError!!,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
         Button(
             onClick = {
-                val nameOk = isValidName(name)
-                val idOk = isValidStudentId(studentId)
-                val emailOk = isValidMontclairEmail(email)
-                val passOk = isPasswordValid
+                registerError = null
 
-                nameError = !nameOk
-                studentIdError = !idOk
-                emailError = !emailOk
-                passwordMatchError = !passOk
-
-                if (nameOk && idOk && emailOk && passOk) {
-                    onRegisterClick(
-                        name.trim(),
-                        studentId.trim(),
-                        email.trim(),
-                        password
-                    )
+                if (!isFormValid) {
+                    Toast.makeText(context, "Please fix errors before registering", Toast.LENGTH_SHORT).show()
+                    return@Button
                 }
+
+                isRegistering = true
+
+                val e = email.trim()
+                val p = password
+
+                Log.d("AUTH", "Registering email=$e")
+
+                auth.createUserWithEmailAndPassword(e, p)
+                    .addOnSuccessListener {
+                        val uid = auth.currentUser?.uid
+                        if (uid == null) {
+                            isRegistering = false
+                            registerError = "Registered but UID missing"
+                            return@addOnSuccessListener
+                        }
+
+                        val userMap = hashMapOf(
+                            "name" to name.trim(),
+                            "studentId" to studentId.trim(),
+                            "email" to e
+                        )
+
+                        // ✅ Save profile FIRST
+                        db.collection("users").document(uid).set(userMap)
+                            .addOnSuccessListener {
+                                isRegistering = false
+                                Log.d("AUTH", "REGISTER+PROFILE OK uid=$uid")
+                                Toast.makeText(context, "Registered!", Toast.LENGTH_SHORT).show()
+
+                                // optional callback if you still use it
+                                onRegisterClick(name.trim(), studentId.trim(), e, p)
+
+                                // ✅ Navigate ONLY after Firestore save succeeds
+                                onBackToLoginClick()
+                            }
+                            .addOnFailureListener { ex ->
+                                isRegistering = false
+                                Log.e("AUTH", "PROFILE SAVE FAILED", ex)
+                                registerError = "Profile save failed: ${ex.message}"
+                            }
+                    }
+                    .addOnFailureListener { ex ->
+                        isRegistering = false
+                        Log.e("AUTH", "REGISTER FAILED", ex)
+                        registerError = ex.message ?: "Register failed"
+                    }
             },
-            enabled = isFormValid,
+            enabled = !isRegistering,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Register")
+            if (isRegistering) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(18.dp),
+                    strokeWidth = 2.dp
+                )
+                Spacer(Modifier.width(10.dp))
+            }
+            Text(if (isRegistering) "Creating..." else "Register")
         }
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        TextButton(onClick = onBackToLoginClick) {
+        TextButton(onClick = { if (!isRegistering) onBackToLoginClick() }) {
             Text("Already have an account? Login")
         }
     }

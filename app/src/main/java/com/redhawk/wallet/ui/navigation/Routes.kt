@@ -18,4 +18,5 @@ object Routes {
 
     // QR / Account ID screen
     const val QR_ID = "qr_id"
+    const val SETTINGS = "settings"
 }

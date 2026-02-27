@@ -33,7 +33,7 @@ fun AppTextField(
         singleLine = singleLine,
         isError = isError,
 
-        // ✅ No KeyboardOptions (prevents your error)
+        // o KeyboardOptions (prevents your error)
         // If you want keyboardType later, we can re-add when deps are fixed.
 
         visualTransformation = if (isPassword) {
