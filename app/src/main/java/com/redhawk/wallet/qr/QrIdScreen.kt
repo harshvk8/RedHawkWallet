@@ -1,6 +1,8 @@
 package com.redhawk.wallet.qr
 
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
@@ -17,9 +19,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
 import com.google.firebase.auth.FirebaseAuth
-
-// ✅ FIXED IMPORT (THIS IS THE MAIN FIX)
 import com.redhawk.wallet.ui.navigation.Routes
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -31,15 +32,31 @@ fun QrIdScreen(
 ) {
     val context = LocalContext.current
     val auth = remember { FirebaseAuth.getInstance() }
+    val firebaseUser = auth.currentUser
 
     var showQr by remember { mutableStateOf(false) }
 
-    val student = vm.student
+    val student = vm.userProfile
     val qrBmp = vm.qrBitmap
+
+    // ✅ Image picker MUST be inside composable
+    val pickImage = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        if (uri != null) {
+            vm.uploadProfilePhoto(uri)
+            Toast.makeText(context, "Uploading photo...", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     LaunchedEffect(Unit) {
         vm.loadStudentProfile()
     }
+
+    // ✅ FALLBACKS so text never shows blank
+    val displayName = student.name.ifBlank { firebaseUser?.displayName ?: "Unknown User" }
+    val displayEmail = student.email.ifBlank { firebaseUser?.email ?: "" }
+    val displayUid = student.uid.ifBlank { firebaseUser?.uid ?: "" }
 
     val Red = Color(0xFFC8102E)
     val RedDark = Color(0xFF9E0B22)
@@ -103,32 +120,43 @@ fun QrIdScreen(
                         verticalAlignment = Alignment.Top,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
+                        // ✅ Photo on left
+                        AsyncImage(
+                            model = student.photoUrl.takeIf { it.isNotBlank() },  // ✅ only load if non-empty
+                            contentDescription = "Profile Photo",
+                            modifier = Modifier.size(72.dp)
+                        )
+
+                        Spacer(Modifier.width(12.dp))
+
+                        // ✅ Name + Email + UID (with fallbacks)
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                student.name,
+                                text = student.name.ifBlank { "Unknown User" },
                                 fontWeight = FontWeight.Bold,
                                 color = Text,
                                 style = MaterialTheme.typography.titleLarge
                             )
                             Text(
-                                student.studentId,
+                                text = student.studentId.ifBlank { "—" },   // ✅ show studentId (NOT email)
                                 color = Muted,
                                 style = MaterialTheme.typography.bodyMedium
                             )
                             Text(
-                                "UID: ${student.uid}",
+                                text = "UID: ${student.uid.ifBlank { "—" }}",
                                 color = Muted,
                                 style = MaterialTheme.typography.bodySmall
                             )
                         }
 
+                        // ✅ Upload button
                         OutlinedButton(
-                            onClick = { /* later */ },
+                            onClick = { pickImage.launch("image/*") },
                             shape = RoundedCornerShape(12.dp),
                             border = BorderStroke(1.dp, Red),
                             colors = ButtonDefaults.outlinedButtonColors(contentColor = Red)
                         ) {
-                            Text("Photo", fontWeight = FontWeight.Bold)
+                            Text("Upload", fontWeight = FontWeight.Bold)
                         }
                     }
 
@@ -140,7 +168,7 @@ fun QrIdScreen(
                 }
             }
 
-            // --- Show QR button (does NOT collapse when clicked again) ---
+            // --- Show QR button ---
             Button(
                 onClick = {
                     if (!showQr) {
@@ -207,6 +235,7 @@ fun QrIdScreen(
                 style = MaterialTheme.typography.titleSmall
             )
 
+            // --- Dropdown ---
             ExposedDropdownMenuBox(
                 expanded = expanded,
                 onExpandedChange = { expanded = !expanded }
@@ -244,7 +273,7 @@ fun QrIdScreen(
 
             Spacer(modifier = Modifier.weight(1f))
 
-            // ✅ Bottom button: Back when QR open, Logout when QR closed
+            // --- Bottom: Back or Logout ---
             if (showQr) {
                 Button(
                     onClick = { showQr = false },

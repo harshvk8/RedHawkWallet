@@ -19,9 +19,7 @@ android {
         versionName = "1.0"
     }
 
-    buildFeatures {
-        compose = true
-    }
+    buildFeatures { compose = true }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -35,8 +33,12 @@ kotlin {
         jvmTarget.set(JvmTarget.JVM_17)
     }
 }
-
 dependencies {
+
+    // Firebase (NO BOM)
+    implementation("com.google.firebase:firebase-auth-ktx:23.1.0")
+    implementation("com.google.firebase:firebase-firestore-ktx:25.1.1")
+    implementation("com.google.firebase:firebase-storage-ktx:21.0.1")
 
     // Core Android
     implementation(libs.androidx.core.ktx)
@@ -54,19 +56,16 @@ dependencies {
     implementation("androidx.navigation:navigation-compose:2.7.7")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
 
+    // Coil
+    implementation("io.coil-kt:coil-compose:2.6.0")
+
     // QR
     implementation("com.google.zxing:core:3.5.3")
 
     // Security
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
 
-    // 🔥 Firebase (BOM manages versions)
-    implementation(platform("com.google.firebase:firebase-bom:34.8.0"))
-    implementation("com.google.firebase:firebase-auth")
-    implementation("com.google.firebase:firebase-analytics")
-    implementation("com.google.firebase:firebase-firestore")   // ✅ Firestore added
-
-    // 🔥 Required for suspend await()
+    // Coroutines Play Services
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
 
     // Debug
