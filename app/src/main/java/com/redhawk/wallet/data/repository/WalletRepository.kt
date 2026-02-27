@@ -1,28 +1,16 @@
 package com.redhawk.wallet.data.repository
 
 import com.redhawk.wallet.data.datasource.FirestoreDataSource
+import com.redhawk.wallet.data.models.Transactions
 import com.redhawk.wallet.data.models.Wallet
 
 class WalletRepository(
-    private val firestore: FirestoreDataSource
+    private val ds: FirestoreDataSource
 ) {
-    // wallets/{uid}
-    private fun walletPath(uid: String) = "wallets/$uid"
-
-    suspend fun getWallet(uid: String): Wallet? {
-        require(uid.isNotBlank()) { "uid cannot be blank" }
-        return firestore.getDocument(walletPath(uid), Wallet::class.java)
-    }
-
-    suspend fun updateWalletBalance(uid: String, newBalance: Double) {
-        require(uid.isNotBlank()) { "uid cannot be blank" }
-
-        firestore.updateFields(
-            path = walletPath(uid),
-            fields = mapOf(
-                "balance" to newBalance,
-                "updatedAt" to System.currentTimeMillis()
-            )
-        )
-    }
+    suspend fun initWallet(uid: String) = ds.initWallet(uid, 200.0)
+    suspend fun getWallet(uid: String): Wallet? = ds.getWallet(uid)
+    suspend fun tapAndPay(uid: String): Transactions = ds.tapAndPay(uid, 5.0)
+    suspend fun getLatestTransactions(uid: String): List<Transactions> = ds.getLatestTransactions(uid)
+    suspend fun tapAndPayWithToken(uid: String, token: String): Transactions =
+        ds.tapAndPayWithToken(uid, token, 5.0)
 }

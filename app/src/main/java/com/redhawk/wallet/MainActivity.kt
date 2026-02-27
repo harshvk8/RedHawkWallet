@@ -7,6 +7,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.lifecycle.lifecycleScope
+import com.redhawk.wallet.data.datasource.FirestoreDataSource
+import com.redhawk.wallet.data.repository.WalletRepository
 import com.redhawk.wallet.nfc.NfcManager
 import com.redhawk.wallet.nfc.NfcRepository
 import com.redhawk.wallet.nfc.NfcResult
@@ -18,6 +20,9 @@ class MainActivity : ComponentActivity() {
 
     private lateinit var nfcManager: NfcManager
 
+    // ✅ Firestore wallet + tap-to-pay repo
+    private val walletRepo by lazy { WalletRepository(FirestoreDataSource()) }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -27,7 +32,7 @@ class MainActivity : ComponentActivity() {
         // Initialize NFC
         nfcManager = NfcManager(this)
 
-        // OPTIONAL: Seed demo offline tokens
+        // OPTIONAL: Seed demo offline tokens (you can keep or remove)
         val repo = NfcRepository(this)
         lifecycleScope.launch {
             repo.fetchOfflineTokens(
@@ -63,21 +68,43 @@ class MainActivity : ComponentActivity() {
 
         when (result) {
             is NfcResult.Success -> {
-                Log.d("NFC", "Token received: ${result.token}")
-                // Later you can navigate to NFC_RESULT screen via shared state
+                // ✅ token from NFC (tag/card/other phone)
+                val nfcToken = result.token
+                Log.d("NFC", "Token received: $nfcToken")
+
+                // ✅ Deduct $5 + store transaction using the NFC token
+                lifecycleScope.launch {
+                    try {
+                        val user = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+                        val uid = user?.uid.orEmpty()
+
+                        if (uid.isBlank()) {
+                            Log.e("NFC", "No logged-in user. Please login first.")
+                            return@launch
+                        }
+
+                        // ✅ Ensure wallet exists (200) for demo
+                        val existing = walletRepo.getWallet(uid)
+                        if (existing == null) {
+                            walletRepo.initWallet(uid) // creates $200
+                        }
+
+                        // ✅ IMPORTANT: call a version that accepts token
+                        // We'll add this function below (small change)
+                        walletRepo.tapAndPayWithToken(uid, nfcToken)
+
+                        Log.d("NFC", "Payment success: -$5, token saved: $nfcToken")
+                        // Dashboard will update when it reloads / or you can trigger a shared refresh state
+
+                    } catch (e: Exception) {
+                        Log.e("NFC", "Payment failed: ${e.message}", e)
+                    }
+                }
             }
 
-            is NfcResult.Error -> {
-                Log.e("NFC", "Error: ${result.message}")
-            }
-
-            NfcResult.Disabled -> {
-                Log.e("NFC", "NFC disabled")
-            }
-
-            NfcResult.NotSupported -> {
-                Log.e("NFC", "NFC not supported")
-            }
+            is NfcResult.Error -> Log.e("NFC", "Error: ${result.message}")
+            NfcResult.Disabled -> Log.e("NFC", "NFC disabled")
+            NfcResult.NotSupported -> Log.e("NFC", "NFC not supported")
         }
     }
 }

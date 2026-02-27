@@ -13,17 +13,18 @@ import androidx.navigation.NavController
 import com.redhawk.wallet.ui.components.WalletCard
 import com.redhawk.wallet.ui.navigation.Routes
 
-data class Transaction(
-    val amount: String,
-    val description: String
-)
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DashboardScreen(navController: NavController) {
+fun DashboardScreen(
+    navController: NavController,
+    tapVm: TapToPayViewModel
+) {
+    val st by tapVm.state.collectAsState()
 
-    // ✅ Transaction list (empty at start)
-    val transactions = remember { mutableStateListOf<Transaction>() }
+    // Load wallet + transactions when screen opens
+    LaunchedEffect(Unit) {
+        tapVm.loadDashboard()
+    }
 
     Scaffold(
         topBar = {
@@ -46,36 +47,58 @@ fun DashboardScreen(navController: NavController) {
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
+                .padding(horizontal = 16.dp)
         ) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            WalletCard(balance = "$0.00")
+            // ✅ REAL BALANCE from ViewModel
+            // st.balanceText is like "Balance: $200.0"
+            val balanceOnly = st.balanceText.replace("Balance:", "").trim()
+            WalletCard(balance = balanceOnly)
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // 🔴 If no transactions
-            if (transactions.isEmpty()) {
-                Box(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "No Transactions Yet",
-                        color = Color.Gray
-                    )
-                }
-            } else {
-                Column {
-                    transactions.forEach {
-                        Text("${it.description} - ${it.amount}")
-                    }
-                }
+            // ✅ TAP BUTTON (demo)
+            Button(
+                onClick = { tapVm.loadDashboard() },   // ✅ just refresh, no payment
+                enabled = !st.loading,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(if (st.loading) "Refreshing..." else "Refresh Balance")
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text(
+                text = "Tap an NFC tag to pay $5",
+                color = Color.Gray
+            )
+
+            st.error?.let {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(it, color = MaterialTheme.colorScheme.error)
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
+            Text("Transactions", style = MaterialTheme.typography.titleMedium)
+            Spacer(modifier = Modifier.height(8.dp))
 
+            // ✅ TRANSACTION LIST from ViewModel
+            if (st.transactionsText.isBlank()) {
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("No Transactions Yet", color = Color.Gray)
+                }
+            } else {
+                // simple text list for demo
+                Text(st.transactionsText)
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }

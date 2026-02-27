@@ -10,7 +10,9 @@ import com.redhawk.wallet.qr.QrIdScreen
 import com.redhawk.wallet.ui.screens.DashboardScreen
 import com.redhawk.wallet.ui.screens.LoginScreen
 import com.redhawk.wallet.ui.screens.RegisterScreen
-
+import com.redhawk.wallet.data.datasource.FirestoreDataSource
+import com.redhawk.wallet.data.repository.WalletRepository
+import com.redhawk.wallet.ui.screens.TapToPayViewModel
 @Composable
 fun AppNav(navController: NavHostController) {
 
@@ -42,7 +44,11 @@ fun AppNav(navController: NavHostController) {
         }
 
         composable(Routes.DASHBOARD) {
-            DashboardScreen(navController = navController)
+            val ds = remember { FirestoreDataSource() }
+            val walletRepo = remember { WalletRepository(ds) }
+            val tapVm = remember { TapToPayViewModel(walletRepo) }
+
+            DashboardScreen(navController , tapVm)
         }
 
         //  QR / ID screen route
