@@ -1,4 +1,4 @@
-package com.redhawk.wallet.ui.screens.components
+package com.redhawk.wallet.ui.components
 
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text

@@ -1,16 +1,14 @@
-package com.redhawk.wallet.ui.screens
+package com.redhawk.wallet.ui.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-
-object Routes {
-    const val LOGIN = "login"
-    const val REGISTER = "register"
-    const val DASHBOARD = "dashboard"
-    const val TRANSACTIONS = "transactions"
-}
+import com.redhawk.wallet.qr.QrIdScreen
+import com.redhawk.wallet.ui.screens.DashboardScreen
+import com.redhawk.wallet.ui.screens.LoginScreen
+import com.redhawk.wallet.ui.screens.RegisterScreen
+import com.redhawk.wallet.ui.screens.TransactionHistoryScreen
 
 @Composable
 fun AppNav() {
@@ -20,12 +18,9 @@ fun AppNav() {
         navController = navController,
         startDestination = Routes.LOGIN
     ) {
-
         composable(Routes.LOGIN) {
             LoginScreen(
-                onLoginClick = { email, password ->
-                    // TODO: connect Firebase auth later.
-                    // For now, navigate to dashboard.
+                onLoginClick = { _, _ ->
                     navController.navigate(Routes.DASHBOARD)
                 },
                 onSignUpClick = {
@@ -36,9 +31,7 @@ fun AppNav() {
 
         composable(Routes.REGISTER) {
             RegisterScreen(
-                onRegisterClick = { name, studentId, email, password ->
-                    // TODO: connect Firebase register later.
-                    // For now, go back to login after "register".
+                onRegisterClick = { _, _, _, _ ->
                     navController.popBackStack()
                 },
                 onBackToLoginClick = {
@@ -52,9 +45,11 @@ fun AppNav() {
         }
 
         composable(Routes.TRANSACTIONS) {
-            TransactionHistoryScreen(
-                onBack = { navController.popBackStack() }
-            )
+            TransactionHistoryScreen()
+        }
+
+        composable(Routes.QR_ID) {
+            QrIdScreen()
         }
     }
 }

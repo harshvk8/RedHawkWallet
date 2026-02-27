@@ -1,38 +1,26 @@
 package com.redhawk.wallet.ui.screens
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.redhawk.wallet.ui.screens.components.TransactionItem
 
 @Composable
-fun TransactionHistoryScreen(
-    onBack: () -> Unit
-) {
-    Column(
+fun TransactionHistoryScreen() {
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(24.dp),
+        contentAlignment = Alignment.Center
     ) {
-
-        Button(onClick = onBack) {
-            Text("Back")
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        TransactionItem(
-            title = "Starbucks",
-            amount = "-$6.50",
-            date = "Feb 20, 2026"
-        )
-
-        TransactionItem(
-            title = "Bookstore",
-            amount = "-$42.00",
-            date = "Feb 19, 2026"
+        Text(
+            text = "No transactions yet",
+            style = MaterialTheme.typography.titleMedium
         )
     }
 }

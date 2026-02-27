@@ -1,4 +1,4 @@
-package com.redhawk.wallet.ui.screens.components
+package com.redhawk.wallet.ui.components
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*

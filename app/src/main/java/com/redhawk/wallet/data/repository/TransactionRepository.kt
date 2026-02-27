@@ -1,7 +1,7 @@
 package com.redhawk.wallet.data.repository
 
 import com.redhawk.wallet.data.datasource.FirestoreDataSource
-import com.redhawk.wallet.data.models.Transaction
+import com.redhawk.wallet.data.models.Transactions
 
 class TransactionRepository(
     private val firestore: FirestoreDataSource
@@ -9,7 +9,7 @@ class TransactionRepository(
     // transactions/{uid}/items
     private fun itemsPath(uid: String) = "transactions/$uid/items"
 
-    suspend fun addTransaction(uid: String, transaction: Transaction): String {
+    suspend fun addTransaction(uid: String, transaction: Transactions): String {
         require(uid.isNotBlank()) { "uid cannot be blank" }
         return firestore.addDocument(
             collectionPath = itemsPath(uid),
@@ -17,11 +17,11 @@ class TransactionRepository(
         )
     }
 
-    suspend fun getTransactions(uid: String): List<Transaction> {
+    suspend fun getTransactions(uid: String): List<Transactions> {
         require(uid.isNotBlank()) { "uid cannot be blank" }
         return firestore.getCollection(
             collectionPath = itemsPath(uid),
-            clazz = Transaction::class.java
+            clazz = Transactions::class.java
         )
     }
 }

@@ -14,7 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.redhawk.wallet.ui.screens.components.PrimaryButton
+import com.redhawk.wallet.ui.components.PrimaryButton
 
 @Composable
 fun ReceiptScreen(
