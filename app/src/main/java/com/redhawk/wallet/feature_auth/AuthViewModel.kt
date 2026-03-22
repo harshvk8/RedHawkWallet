@@ -1,12 +1,14 @@
 package com.redhawk.wallet.feature_auth
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
-class AuthViewModel(
-    private val repository: AuthRepository = AuthRepository()
-) : ViewModel() {
+class AuthViewModel(context: Context) : ViewModel() {
+
+    private val sessionManager = SessionManager(context)
+    private val repository = AuthRepository(AuthManager(), sessionManager)
 
     private val _authState = MutableStateFlow<AuthResult?>(null)
     val authState: StateFlow<AuthResult?> = _authState

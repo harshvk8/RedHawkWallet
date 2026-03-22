@@ -9,18 +9,44 @@ class SessionManager(context: Context) {
 
     companion object {
         private const val KEY_IS_LOGGED_IN = "is_logged_in"
+        private const val KEY_IS_EMAIL_VERIFIED = "is_email_verified"
     }
 
+    /**
+     * Save login state
+     */
     fun setLoggedIn(isLoggedIn: Boolean) {
         sharedPreferences.edit()
             .putBoolean(KEY_IS_LOGGED_IN, isLoggedIn)
             .apply()
     }
 
+    /**
+     * Check if user is logged in
+     */
     fun isLoggedIn(): Boolean {
         return sharedPreferences.getBoolean(KEY_IS_LOGGED_IN, false)
     }
 
+    /**
+     * Save email verification status
+     */
+    fun setEmailVerified(isVerified: Boolean) {
+        sharedPreferences.edit()
+            .putBoolean(KEY_IS_EMAIL_VERIFIED, isVerified)
+            .apply()
+    }
+
+    /**
+     * Check if email is verified
+     */
+    fun isEmailVerified(): Boolean {
+        return sharedPreferences.getBoolean(KEY_IS_EMAIL_VERIFIED, false)
+    }
+
+    /**
+     * Clear ALL session data (🔥 critical for fixing your bug)
+     */
     fun clearSession() {
         sharedPreferences.edit()
             .clear()

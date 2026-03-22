@@ -3,7 +3,6 @@ package com.redhawk.wallet.feature_auth
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 
-
 class AuthManager {
 
     // Firebase instance
@@ -65,5 +64,13 @@ class AuthManager {
      */
     fun getCurrentUser(): FirebaseUser? {
         return firebaseAuth.currentUser
+    }
+
+    /**
+     * Optional helper:
+     * Check if user is logged in (Firebase side)
+     */
+    fun isUserLoggedIn(): Boolean {
+        return firebaseAuth.currentUser != null
     }
 }
