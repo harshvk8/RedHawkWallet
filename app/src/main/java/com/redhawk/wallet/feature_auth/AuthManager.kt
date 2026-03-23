@@ -14,4 +14,12 @@ class AuthManager {
     fun getCurrentUser(): FirebaseUser? {
         return firebaseAuth.currentUser
     }
+
+    fun isEmailVerified(): Boolean {
+        return firebaseAuth.currentUser?.isEmailVerified ?: false
+    }
+
+    suspend fun reloadUser() {
+        firebaseAuth.currentUser?.reload()
+    }
 }
