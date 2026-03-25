@@ -21,7 +21,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.google.firebase.auth.FirebaseAuth
-import com.redhawk.wallet.ui.navigation.Routes
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -39,7 +38,7 @@ fun QrIdScreen(
     val student = vm.userProfile
     val qrBmp = vm.qrBitmap
 
-    //  Image picker MUST be inside composable
+    // ✅ Image picker MUST be inside composable
     val pickImage = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
@@ -53,7 +52,7 @@ fun QrIdScreen(
         vm.loadStudentProfile()
     }
 
-    //  FALLBACKS so text never shows blank
+    // ✅ FALLBACKS so text never shows blank
     val displayName = student.name.ifBlank { firebaseUser?.displayName ?: "Unknown User" }
     val displayEmail = student.email.ifBlank { firebaseUser?.email ?: "" }
     val displayUid = student.uid.ifBlank { firebaseUser?.uid ?: "" }
@@ -252,9 +251,8 @@ fun QrIdScreen(
                         unfocusedTextColor = Text
                     ),
                     shape = RoundedCornerShape(14.dp),
-                    modifier = Modifier
-                        .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true)
-                        .fillMaxWidth()                )
+                    modifier = Modifier.menuAnchor().fillMaxWidth()
+                )
 
                 ExposedDropdownMenu(
                     expanded = expanded,
@@ -300,14 +298,6 @@ fun QrIdScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("Logout", fontWeight = FontWeight.Bold)
-                    Button(
-                        onClick = {
-                            navController.navigate(Routes.QR_SCANNER)
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Scan QR Code")
-                    }
                 }
             }
         }
