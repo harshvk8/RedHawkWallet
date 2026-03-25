@@ -25,7 +25,6 @@ class SessionManager(context: Context) {
             .apply()
     }
 
-
     fun isLoggedIn(): Boolean {
         return sharedPreferences.getBoolean(KEY_IS_LOGGED_IN, false)
     }
@@ -33,7 +32,6 @@ class SessionManager(context: Context) {
     fun getUserId(): String? {
         return sharedPreferences.getString(KEY_USER_ID, null)
     }
-
 
     fun logout() {
         sharedPreferences.edit()
