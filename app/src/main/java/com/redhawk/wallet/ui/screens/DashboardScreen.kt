@@ -11,7 +11,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.redhawk.wallet.ui.components.WalletCard
-import com.redhawk.wallet.ui.navigation.Routes
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

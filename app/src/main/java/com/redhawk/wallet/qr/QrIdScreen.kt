@@ -21,7 +21,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.google.firebase.auth.FirebaseAuth
-import com.redhawk.wallet.ui.navigation.Routes
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
