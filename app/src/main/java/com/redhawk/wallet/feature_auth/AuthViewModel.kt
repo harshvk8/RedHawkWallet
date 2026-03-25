@@ -1,6 +1,18 @@
+package com.redhawk.wallet.feature_auth
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.google.firebase.auth.FirebaseAuth
+import com.redhawk.wallet.data.datasource.FirestoreDataSource
+import com.redhawk.wallet.data.models.UserProfile
+import com.redhawk.wallet.data.repository.UserRepository
+import com.redhawk.wallet.data.repository.WalletRepository
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
+
 class AuthViewModel(
-    private val repository: AuthRepository = AuthRepository(),
-    private val manager: AuthManager = AuthManager(),
+    private val authManager: AuthManager = AuthManager(),
     private val userRepository: UserRepository = UserRepository(FirestoreDataSource()),
     private val walletRepository: WalletRepository = WalletRepository(FirestoreDataSource())
 ) : ViewModel() {
@@ -17,7 +29,13 @@ class AuthViewModel(
         }
     }
 
-    fun register(name: String, username: String, studentId: String, email: String, password: String) {
+    fun register(
+        name: String,
+        username: String,
+        studentId: String,
+        email: String,
+        password: String
+    ) {
         val usernameError = validateUsername(username)
         if (usernameError != null) {
             _authState.value = AuthResult.Error(usernameError)
@@ -27,43 +45,50 @@ class AuthViewModel(
         _authState.value = AuthResult.Loading
 
         viewModelScope.launch {
-            val result = repository.registerIfAllowed(
-                name = name,
-                studentId = studentId,
-                email = email,
-                password = password
-            )
+            try {
+                val result = authManager.register(email, password)
 
-            if (result is AuthResult.Success) {
-                val user = FirebaseAuth.getInstance().currentUser
-                val uid = user?.uid.orEmpty()
+                result.fold(
+                    onSuccess = { uid ->
+                        val safeUid = uid.ifBlank {
+                            FirebaseAuth.getInstance().currentUser?.uid.orEmpty()
+                        }
 
-                if (uid.isNotBlank()) {
-                    val profile = UserProfile(
-                        uid = uid,
-                        name = name,
-                        username = username,
-                        studentId = studentId,
-                        email = email,
-                        photoUrl = ""
-                    )
+                        if (safeUid.isBlank()) {
+                            _authState.value = AuthResult.Error("UID missing")
+                            return@launch
+                        }
 
-                    try {
-                        userRepository.createUserProfile(profile)
-                        walletRepository.initWallet(uid)
-                    } catch (e: Exception) {
-                        _authState.value = AuthResult.Error(
-                            e.message ?: "Failed to save user profile / wallet"
+                        val profile = UserProfile(
+                            uid = safeUid,
+                            name = name,
+                            username = username,
+                            studentId = studentId,
+                            email = email,
+                            photoUrl = ""
                         )
-                        return@launch
-                    }
-                } else {
-                    _authState.value = AuthResult.Error("Registration succeeded but UID is missing")
-                    return@launch
-                }
-            }
 
-            _authState.value = result
+                        try {
+                            userRepository.createUserProfile(profile)
+                            walletRepository.initWallet(safeUid)
+                            _authState.value = AuthResult.Success(safeUid)
+                        } catch (e: Exception) {
+                            _authState.value = AuthResult.Error(
+                                e.message ?: "Failed to save user profile / wallet"
+                            )
+                        }
+                    },
+                    onFailure = { e ->
+                        _authState.value = AuthResult.Error(
+                            e.message ?: "Registration failed"
+                        )
+                    }
+                )
+            } catch (e: Exception) {
+                _authState.value = AuthResult.Error(
+                    e.message ?: "Registration failed"
+                )
+            }
         }
     }
 
@@ -71,30 +96,44 @@ class AuthViewModel(
         _authState.value = AuthResult.Loading
 
         viewModelScope.launch {
-            val result = repository.login(email, password)
+            try {
+                val result = authManager.login(email, password)
 
-            if (result is AuthResult.Success) {
-                val uid = FirebaseAuth.getInstance().currentUser?.uid.orEmpty()
-                if (uid.isNotBlank()) {
-                    val w = walletRepository.getWallet(uid)
-                    if (w == null) walletRepository.initWallet(uid)
-                }
+                result.fold(
+                    onSuccess = { uid ->
+                        if (uid.isNotBlank()) {
+                            val wallet = walletRepository.getWallet(uid)
+                            if (wallet == null) {
+                                walletRepository.initWallet(uid)
+                            }
+                        }
+
+                        _authState.value = AuthResult.Success(uid)
+                    },
+                    onFailure = { e ->
+                        _authState.value = AuthResult.Error(
+                            e.message ?: "Login failed"
+                        )
+                    }
+                )
+            } catch (e: Exception) {
+                _authState.value = AuthResult.Error(
+                    e.message ?: "Login failed"
+                )
             }
-
-            _authState.value = result
         }
     }
 
     fun signOut() {
-        manager.signOut()
+        authManager.signOut()
         _authState.value = null
-    }
-
-    fun checkCurrentUser(): Boolean {
-        return manager.getCurrentUser() != null
     }
 
     fun clearState() {
         _authState.value = null
+    }
+
+    fun checkCurrentUser(): Boolean {
+        return authManager.getCurrentUser() != null
     }
 }

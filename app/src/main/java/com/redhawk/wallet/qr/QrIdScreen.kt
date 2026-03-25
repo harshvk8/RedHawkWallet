@@ -1,5 +1,6 @@
 package com.redhawk.wallet.qr
 
+import com.redhawk.wallet.ui.navigation.Routes
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts

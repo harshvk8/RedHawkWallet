@@ -11,6 +11,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.redhawk.wallet.ui.components.WalletCard
+import com.redhawk.wallet.ui.navigation.Routes
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -20,7 +21,6 @@ fun DashboardScreen(
 ) {
     val st by tapVm.state.collectAsState()
 
-    // Load wallet + transactions when screen opens
     LaunchedEffect(Unit) {
         tapVm.loadDashboard()
     }
@@ -51,16 +51,13 @@ fun DashboardScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // ✅ REAL BALANCE from ViewModel
-            // st.balanceText is like "Balance: $200.0"
             val balanceOnly = st.balanceText.replace("Balance:", "").trim()
             WalletCard(balance = balanceOnly)
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // ✅ TAP BUTTON (demo)
             Button(
-                onClick = { tapVm.loadDashboard() },   // ✅ just refresh, no payment
+                onClick = { tapVm.loadDashboard() },
                 enabled = !st.loading,
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -84,7 +81,6 @@ fun DashboardScreen(
             Text("Transactions", style = MaterialTheme.typography.titleMedium)
             Spacer(modifier = Modifier.height(8.dp))
 
-            // ✅ TRANSACTION LIST from ViewModel
             if (st.transactionsText.isBlank()) {
                 Box(
                     modifier = Modifier.fillMaxWidth(),
@@ -93,7 +89,6 @@ fun DashboardScreen(
                     Text("No Transactions Yet", color = Color.Gray)
                 }
             } else {
-                // simple text list for demo
                 Text(st.transactionsText)
             }
 
