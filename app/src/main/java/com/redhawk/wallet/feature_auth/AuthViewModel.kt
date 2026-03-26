@@ -1,98 +1,119 @@
 package com.redhawk.wallet.feature_auth
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import com.redhawk.wallet.data.datasource.FirestoreDataSource
-import com.redhawk.wallet.data.models.UserProfile
-import com.redhawk.wallet.data.repository.UserRepository
 import com.redhawk.wallet.data.repository.WalletRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-class AuthViewModel(
-    private val repository: AuthRepository = AuthRepository(),
-    private val manager: AuthManager = AuthManager(),
-    private val userRepository: UserRepository = UserRepository(FirestoreDataSource()),
-    private val walletRepository: WalletRepository = WalletRepository(FirestoreDataSource())
-) : ViewModel() {
+class AuthViewModel(application: Application) : AndroidViewModel(application) {
+
+    private val context = getApplication<Application>().applicationContext
+
+    private val authManager = AuthManager()
+    private val sessionManager = SessionManager(context)
+    private val repository = AuthRepository(authManager, sessionManager)
+
+    private val walletRepository = WalletRepository(FirestoreDataSource())
 
     private val _authState = MutableStateFlow<AuthResult?>(null)
     val authState: StateFlow<AuthResult?> = _authState
 
-    fun register(name: String, studentId: String, email: String, password: String) {
+    /**
+     * ✅ REGISTER (NO UserProfile)
+     */
+    fun register(
+        name: String,        // still passed from UI (optional use later)
+        studentId: String,   // still passed from UI (optional use later)
+        email: String,
+        password: String
+    ) {
         _authState.value = AuthResult.Loading
 
         viewModelScope.launch {
-            val result = repository.registerIfAllowed(
-                name = name,
-                studentId = studentId,
-                email = email,
-                password = password
-            )
+            try {
+                val result = repository.register(email, password)
 
-            // ✅ If register success → create profile + init wallet(200)
-            if (result is AuthResult.Success) {
-                val user = FirebaseAuth.getInstance().currentUser
-                val uid = user?.uid.orEmpty()
+                if (result.isSuccess) {
+                    val uid = result.getOrNull().orEmpty()
 
-                if (uid.isNotBlank()) {
-                    val profile = UserProfile(
-                        uid = uid,
-                        name = name,
-                        studentId = studentId,
-                        email = email,
-                        photoUrl = ""
-                    )
-
-                    try {
-                        userRepository.createUserProfile(profile)
-                        walletRepository.initWallet(uid) // ✅ $200 wallet
-                    } catch (e: Exception) {
-                        // If Firestore fails, show error
-                        _authState.value = AuthResult.Error(
-                            e.message ?: "Failed to save user profile / wallet"
-                        )
+                    if (uid.isBlank()) {
+                        _authState.value = AuthResult.Error("UID missing")
                         return@launch
                     }
-                } else {
-                    _authState.value = AuthResult.Error("Registration succeeded but UID is missing")
-                    return@launch
-                }
-            }
 
-            _authState.value = result
+
+                    val wallet = walletRepository.getWallet(uid)
+                    if (wallet == null) {
+                        walletRepository.initWallet(uid)
+                    }
+
+                    _authState.value = AuthResult.Success(uid)
+
+                } else {
+                    _authState.value = AuthResult.Error(
+                        result.exceptionOrNull()?.message ?: "Registration failed"
+                    )
+                }
+
+            } catch (e: Exception) {
+                _authState.value = AuthResult.Error(
+                    e.message ?: "Registration error"
+                )
+            }
         }
     }
+
 
     fun login(email: String, password: String) {
         _authState.value = AuthResult.Loading
 
         viewModelScope.launch {
-            val result = repository.login(email, password)
+            try {
+                val result = repository.login(email, password)
 
-            // ✅ if login success, ensure wallet exists
-            if (result is AuthResult.Success) {
-                val uid = FirebaseAuth.getInstance().currentUser?.uid.orEmpty()
-                if (uid.isNotBlank()) {
-                    val w = walletRepository.getWallet(uid)
-                    if (w == null) walletRepository.initWallet(uid)
+                if (result.isSuccess) {
+                    val uid = result.getOrNull().orEmpty()
+
+                    if (uid.isNotBlank()) {
+                        val wallet = walletRepository.getWallet(uid)
+                        if (wallet == null) {
+                            walletRepository.initWallet(uid)
+                        }
+                    }
+
+                    _authState.value = AuthResult.Success(uid)
+
+                } else {
+                    _authState.value = AuthResult.Error(
+                        result.exceptionOrNull()?.message ?: "Login failed"
+                    )
                 }
-            }
 
-            _authState.value = result
+            } catch (e: Exception) {
+                _authState.value = AuthResult.Error(
+                    e.message ?: "Login error"
+                )
+            }
         }
     }
 
+
     fun signOut() {
-        manager.signOut()
+        repository.logout()
         _authState.value = null
     }
 
+
     fun checkCurrentUser(): Boolean {
-        return manager.getCurrentUser() != null
+        val user = authManager.getCurrentUser()
+        return user != null && user.uid.isNotBlank()
     }
+
 
     fun clearState() {
         _authState.value = null
