@@ -1,6 +1,7 @@
 package com.redhawk.wallet.ui.screens
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import com.redhawk.wallet.data.repository.WalletRepository
@@ -12,7 +13,8 @@ data class TapUiState(
     val balanceText: String = "Balance: --",
     val transactionsText: String = "",
     val error: String? = null,
-    val loading: Boolean = false
+    val loading: Boolean = false,
+    val isEmailVerified: Boolean = false
 )
 
 class TapToPayViewModel(
@@ -25,16 +27,23 @@ class TapToPayViewModel(
     private fun uid(): String =
         FirebaseAuth.getInstance().currentUser?.uid ?: ""
 
+    private fun checkEmailVerified(): Boolean {
+        val user = FirebaseAuth.getInstance().currentUser
+        user?.reload()
+        return user?.isEmailVerified ?: false
+    }
+
     fun loadDashboard() {
         val u = uid()
         if (u.isBlank()) return
 
         viewModelScope.launch {
             try {
-                // ✅ ALWAYS ensure wallet exists
+                val emailVerified = checkEmailVerified()
+
                 var w = walletRepo.getWallet(u)
                 if (w == null) {
-                    walletRepo.initWallet(u)        // creates 200
+                    walletRepo.initWallet(u)
                     w = walletRepo.getWallet(u)
                 }
 
@@ -45,7 +54,10 @@ class TapToPayViewModel(
                     transactionsText = txs.joinToString("\n") {
                         "• -$${it.amount} | ${it.status} | ${it.token.take(8)}..."
                     },
-                    error = null
+                    isEmailVerified = emailVerified,
+                    error = if (!emailVerified)
+                        "⚠️ Please verify your email to use payments."
+                    else null
                 )
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
@@ -59,17 +71,23 @@ class TapToPayViewModel(
         val u = uid()
         if (u.isBlank()) return
 
+        if (!checkEmailVerified()) {
+            _state.value = _state.value.copy(
+                error = "⚠️ Please verify your email before making payments."
+            )
+            return
+        }
+
         viewModelScope.launch {
             try {
                 _state.value = _state.value.copy(loading = true, error = null)
 
-                // ✅ ensure wallet exists before deduct
                 val w = walletRepo.getWallet(u)
                 if (w == null) {
-                    walletRepo.initWallet(u)  // creates 200
+                    walletRepo.initWallet(u)
                 }
 
-                walletRepo.tapAndPay(u)  // deduct 5 + save tx
+                walletRepo.tapAndPay(u)
                 loadDashboard()
 
                 _state.value = _state.value.copy(loading = false)
@@ -80,5 +98,17 @@ class TapToPayViewModel(
                 )
             }
         }
+    }
+}
+
+class TapToPayViewModelFactory(
+    private val walletRepo: WalletRepository
+) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(TapToPayViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return TapToPayViewModel(walletRepo) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

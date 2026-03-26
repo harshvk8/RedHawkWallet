@@ -16,7 +16,7 @@ import com.redhawk.wallet.nfc.NfcResult
 import com.redhawk.wallet.ui.navigation.AppNav
 import com.redhawk.wallet.ui.theme.RedHawkWalletTheme
 import kotlinx.coroutines.launch
-//new
+
 class MainActivity : ComponentActivity() {
 
     private lateinit var nfcManager: NfcManager
@@ -85,8 +85,8 @@ class MainActivity : ComponentActivity() {
                         }
 
                         walletRepo.tapAndPayWithToken(uid, nfcToken)
-
                         Log.d("NFC", "Payment success: -$5, token saved: $nfcToken")
+
                     } catch (e: Exception) {
                         Log.e("NFC", "Payment failed: ${e.message}", e)
                     }
