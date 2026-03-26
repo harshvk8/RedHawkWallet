@@ -48,7 +48,6 @@ fun DashboardScreen(
                 .fillMaxSize()
                 .padding(horizontal = 16.dp)
         ) {
-
             Spacer(modifier = Modifier.height(16.dp))
 
             val balanceOnly = st.balanceText.replace("Balance:", "").trim()
@@ -65,6 +64,7 @@ fun DashboardScreen(
             }
 
             Spacer(modifier = Modifier.height(12.dp))
+
 
             Text(
                 text = "Tap an NFC tag to pay $5",
