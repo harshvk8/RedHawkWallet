@@ -1,17 +1,9 @@
 package com.redhawk.wallet.ui.screens
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.size
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -23,31 +15,34 @@ import kotlinx.coroutines.delay
 fun SplashScreen(
     onNavigateNext: () -> Unit
 ) {
-    LaunchedEffect(Unit) {
+    LaunchedEffect(true) {
         delay(2000)
         onNavigateNext()
     }
 
-    Column(
+    Box(
         modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+        contentAlignment = Alignment.Center
     ) {
-        Image(
-            painter = painterResource(id = R.drawable.redhawk_logo),
-            contentDescription = "Logo",
-            modifier = Modifier.size(140.dp)
-        )
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.redhawk_logo),
+                contentDescription = "App Logo",
+                modifier = Modifier.size(140.dp)
+            )
 
-        Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-        Text(
-            text = "Red Hawk Wallet",
-            style = MaterialTheme.typography.headlineSmall
-        )
+            Text(
+                text = "Red Hawk Wallet",
+                style = MaterialTheme.typography.headlineSmall
+            )
 
-        Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-        CircularProgressIndicator()
+            CircularProgressIndicator()
+        }
     }
 }

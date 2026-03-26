@@ -3,7 +3,6 @@ package com.redhawk.wallet.data.datasource
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.redhawk.wallet.data.models.Transactions
-import com.redhawk.wallet.data.models.UserProfile
 import com.redhawk.wallet.data.models.Wallet
 import kotlinx.coroutines.tasks.await
 import java.util.UUID
@@ -12,30 +11,11 @@ class FirestoreDataSource(
     private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
 ) {
 
-    // -----------------------------
-    // USER
-    // -----------------------------
-    suspend fun createUserProfile(uid: String, profile: UserProfile) {
-        db.collection("users").document(uid).set(profile).await()
-    }
-
-    suspend fun setDocument(documentPath: String, data: Any) {
-        db.document(documentPath).set(data).await()
-    }
-
-    suspend fun <T> getDocument(documentPath: String, clazz: Class<T>): T? {
-        val snap = db.document(documentPath).get().await()
-        return snap.toObject(clazz)
-    }
-
-    // -----------------------------
-    // WALLET
-    // -----------------------------
     suspend fun initWallet(uid: String, initialBalance: Double = 200.0) {
         val wallet = Wallet(
-            uid = uid,
-            balance = initialBalance,
-            updatedAt = System.currentTimeMillis()
+            walletId = uid,
+            userId = uid,
+            balance = initialBalance
         )
         db.collection("wallets").document(uid).set(wallet).await()
     }
@@ -57,6 +37,7 @@ class FirestoreDataSource(
             .collection("transactions").document(txId)
 
         return db.runTransaction { transaction ->
+
             val walletSnap = transaction.get(walletRef)
             val currentBalance = walletSnap.getDouble("balance") ?: 0.0
 
@@ -67,14 +48,13 @@ class FirestoreDataSource(
             val newBalance = currentBalance - amountToDeduct
 
             transaction.update(walletRef, mapOf(
-                "balance" to newBalance,
-                "updatedAt" to System.currentTimeMillis()
+                "balance" to newBalance
             ))
 
-            val tx = com.redhawk.wallet.data.models.Transactions(
+            val tx = Transactions(
                 id = txId,
                 uid = uid,
-                token = token,                 // ✅ NFC token saved
+                token = token,
                 amount = amountToDeduct,
                 status = "success",
                 type = "nfc_tap",
@@ -87,13 +67,7 @@ class FirestoreDataSource(
         }.await()
     }
 
-    // -----------------------------
-    // TAP TO PAY (Atomic Deduct + Transaction Save)
-    // -----------------------------
-
-
     suspend fun tapAndPay(uid: String, amountToDeduct: Double = 5.0): Transactions {
-
 
         val walletRef = db.collection("wallets").document(uid)
         val txId = UUID.randomUUID().toString()
@@ -114,8 +88,7 @@ class FirestoreDataSource(
             val newBalance = currentBalance - amountToDeduct
 
             transaction.update(walletRef, mapOf(
-                "balance" to newBalance,
-                "updatedAt" to System.currentTimeMillis()
+                "balance" to newBalance
             ))
 
             val token = UUID.randomUUID().toString()
@@ -132,14 +105,10 @@ class FirestoreDataSource(
             )
 
             transaction.set(txRef, tx)
-
             tx
         }.await()
     }
 
-    // -----------------------------
-    // TRANSACTIONS
-    // -----------------------------
     suspend fun getLatestTransactions(
         uid: String,
         limit: Long = 20
@@ -154,18 +123,5 @@ class FirestoreDataSource(
             .await()
 
         return snap.toObjects(Transactions::class.java)
-    }
-
-    suspend fun addDocument(collectionPath: String, data: Any): String {
-        val ref = db.collection(collectionPath).add(data).await()
-        return ref.id
-    }
-
-    suspend fun <T> getCollection(
-        collectionPath: String,
-        clazz: Class<T>
-    ): List<T> {
-        val snap = db.collection(collectionPath).get().await()
-        return snap.toObjects(clazz)
     }
 }
