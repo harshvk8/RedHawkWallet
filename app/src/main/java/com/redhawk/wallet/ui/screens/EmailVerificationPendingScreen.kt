@@ -13,7 +13,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -23,44 +23,28 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.redhawk.wallet.feature_auth.AuthViewModel
+import com.google.firebase.auth.FirebaseAuth
 
 @Composable
 fun EmailVerificationPendingScreen(
-    authViewModel: AuthViewModel = viewModel(),
     userEmail: String? = null,
     onVerified: () -> Unit,
     onBackToLogin: () -> Unit
 ) {
     val context = LocalContext.current
+    val auth = remember { FirebaseAuth.getInstance() }
 
-    // Replace these with your actual state names if different
-    val isLoading by authViewModel.isLoading.collectAsState()
-    val authMessage by authViewModel.message.collectAsState()
-    val isEmailVerified by authViewModel.isEmailVerified.collectAsState()
+    var isLoading by remember { mutableStateOf(false) }
 
-    LaunchedEffect(isEmailVerified) {
-        if (isEmailVerified) {
-            onVerified()
-        }
-    }
-
-    LaunchedEffect(authMessage) {
-        authMessage?.let {
-            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
-            authViewModel.clearMessage()
-        }
+    fun show(message: String) {
+        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
     }
 
     Column(
@@ -81,6 +65,8 @@ fun EmailVerificationPendingScreen(
                     .padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+
+                // Email Icon
                 Icon(
                     imageVector = Icons.Default.Email,
                     contentDescription = "Email Verification",
@@ -117,9 +103,27 @@ fun EmailVerificationPendingScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                 }
 
+                // CHECK VERIFIED BUTTON
                 Button(
                     onClick = {
-                        authViewModel.reloadCurrentUser()
+                        val user = auth.currentUser
+                        if (user == null) {
+                            show("No logged in user found")
+                            return@Button
+                        }
+
+                        isLoading = true
+                        user.reload()
+                            .addOnCompleteListener {
+                                isLoading = false
+                                val verified = auth.currentUser?.isEmailVerified == true
+                                if (verified) {
+                                    show("Email verified")
+                                    onVerified()
+                                } else {
+                                    show("Email is still not verified")
+                                }
+                            }
                     },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(14.dp)
@@ -134,9 +138,25 @@ fun EmailVerificationPendingScreen(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
+                // RESEND EMAIL BUTTON
                 OutlinedButton(
                     onClick = {
-                        authViewModel.resendVerificationEmail()
+                        val user = auth.currentUser
+                        if (user == null) {
+                            show("No logged in user found")
+                            return@OutlinedButton
+                        }
+
+                        isLoading = true
+                        user.sendEmailVerification()
+                            .addOnCompleteListener { task ->
+                                isLoading = false
+                                if (task.isSuccessful) {
+                                    show("Verification email sent again")
+                                } else {
+                                    show(task.exception?.message ?: "Failed to resend email")
+                                }
+                            }
                     },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(14.dp)
@@ -151,9 +171,10 @@ fun EmailVerificationPendingScreen(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
+                // BACK TO LOGIN BUTTON (FIXED ICON)
                 OutlinedButton(
                     onClick = {
-                        authViewModel.logout()
+                        auth.signOut()
                         onBackToLogin()
                     },
                     modifier = Modifier.fillMaxWidth(),
@@ -161,7 +182,7 @@ fun EmailVerificationPendingScreen(
                     colors = ButtonDefaults.outlinedButtonColors()
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Logout,
+                        imageVector = Icons.Default.ArrowBack,
                         contentDescription = null
                     )
                     Spacer(modifier = Modifier.size(8.dp))

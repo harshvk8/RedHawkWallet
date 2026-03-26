@@ -106,7 +106,6 @@ fun RegisterScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Full Name
         OutlinedTextField(
             value = name,
             onValueChange = { input ->
@@ -117,13 +116,16 @@ fun RegisterScreen(
             label = { Text("Full Name") },
             singleLine = true,
             isError = nameError,
-            supportingText = { if (nameError) Text("Name must contain letters only") },
+            supportingText = {
+                if (nameError) {
+                    Text("Name must contain letters only")
+                }
+            },
             modifier = Modifier.fillMaxWidth()
         )
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Student ID
         OutlinedTextField(
             value = studentId,
             onValueChange = { input ->
@@ -137,13 +139,16 @@ fun RegisterScreen(
             label = { Text("Student ID (M########)") },
             singleLine = true,
             isError = studentIdError,
-            supportingText = { if (studentIdError) Text("Must start with M + 8 digits (ex: M12345678)") },
+            supportingText = {
+                if (studentIdError) {
+                    Text("Must start with M + 8 digits (ex: M12345678)")
+                }
+            },
             modifier = Modifier.fillMaxWidth()
         )
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Email
         OutlinedTextField(
             value = email,
             onValueChange = { input ->
@@ -153,13 +158,16 @@ fun RegisterScreen(
             label = { Text("Email (@montclair.edu)") },
             singleLine = true,
             isError = emailError,
-            supportingText = { if (emailError) Text("Email must end with @montclair.edu") },
+            supportingText = {
+                if (emailError) {
+                    Text("Email must end with @montclair.edu")
+                }
+            },
             modifier = Modifier.fillMaxWidth()
         )
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Password
         OutlinedTextField(
             value = password,
             onValueChange = { newValue ->
@@ -168,7 +176,11 @@ fun RegisterScreen(
             },
             label = { Text("Password") },
             singleLine = true,
-            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+            visualTransformation = if (passwordVisible) {
+                VisualTransformation.None
+            } else {
+                PasswordVisualTransformation()
+            },
             trailingIcon = {
                 TextButton(onClick = { passwordVisible = !passwordVisible }) {
                     Text(if (passwordVisible) "HIDE" else "SHOW")
@@ -188,7 +200,6 @@ fun RegisterScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Confirm Password
         OutlinedTextField(
             value = confirmPassword,
             onValueChange = { newValue ->
@@ -198,8 +209,16 @@ fun RegisterScreen(
             label = { Text("Confirm Password") },
             singleLine = true,
             isError = passwordMatchError,
-            supportingText = { if (passwordMatchError) Text("Passwords do not match") },
-            visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+            supportingText = {
+                if (passwordMatchError) {
+                    Text("Passwords do not match")
+                }
+            },
+            visualTransformation = if (confirmPasswordVisible) {
+                VisualTransformation.None
+            } else {
+                PasswordVisualTransformation()
+            },
             trailingIcon = {
                 TextButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
                     Text(if (confirmPasswordVisible) "HIDE" else "SHOW")
@@ -210,7 +229,6 @@ fun RegisterScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Show error text if any
         if (!registerError.isNullOrBlank()) {
             Text(
                 text = registerError!!,
@@ -222,10 +240,24 @@ fun RegisterScreen(
 
         Button(
             onClick = {
+                val nameOk = isValidName(name)
+                val idOk = isValidStudentId(studentId)
+                val emailOk = isValidMontclairEmail(email)
+                val passOk = isPasswordValid
+
                 registerError = null
 
+                nameError = !nameOk
+                studentIdError = !idOk
+                emailError = !emailOk
+                passwordMatchError = !passOk
+
                 if (!isFormValid) {
-                    Toast.makeText(context, "Please fix errors before registering", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        context,
+                        "Please fill details correctly before registering",
+                        Toast.LENGTH_SHORT
+                    ).show()
                     return@Button
                 }
 
@@ -251,18 +283,25 @@ fun RegisterScreen(
                             "email" to e
                         )
 
-                        // ✅ Save profile FIRST
                         db.collection("users").document(uid).set(userMap)
                             .addOnSuccessListener {
-                                isRegistering = false
-                                Log.d("AUTH", "REGISTER+PROFILE OK uid=$uid")
-                                Toast.makeText(context, "Registered!", Toast.LENGTH_SHORT).show()
+                                auth.currentUser?.sendEmailVerification()
+                                    ?.addOnSuccessListener {
+                                        isRegistering = false
+                                        Log.d("AUTH", "REGISTER+PROFILE OK uid=$uid")
+                                        Toast.makeText(
+                                            context,
+                                            "Registered! Verification email sent.",
+                                            Toast.LENGTH_LONG
+                                        ).show()
 
-                                // optional callback if you still use it
-                                onRegisterClick(name.trim(), studentId.trim(), e, p)
-
-                                // ✅ Navigate ONLY after Firestore save succeeds
-                                onBackToLoginClick()
+                                        onBackToLoginClick()
+                                    }
+                                    ?.addOnFailureListener { ex ->
+                                        isRegistering = false
+                                        Log.e("AUTH", "EMAIL VERIFICATION FAILED", ex)
+                                        registerError = "Registered, but failed to send verification email: ${ex.message}"
+                                    }
                             }
                             .addOnFailureListener { ex ->
                                 isRegistering = false
@@ -276,7 +315,7 @@ fun RegisterScreen(
                         registerError = ex.message ?: "Register failed"
                     }
             },
-            enabled = !isRegistering,
+            enabled = isFormValid && !isRegistering,
             modifier = Modifier.fillMaxWidth()
         ) {
             if (isRegistering) {
@@ -284,14 +323,18 @@ fun RegisterScreen(
                     modifier = Modifier.size(18.dp),
                     strokeWidth = 2.dp
                 )
-                Spacer(Modifier.width(10.dp))
+                Spacer(modifier = Modifier.width(10.dp))
             }
             Text(if (isRegistering) "Creating..." else "Register")
         }
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        TextButton(onClick = { if (!isRegistering) onBackToLoginClick() }) {
+        TextButton(
+            onClick = {
+                if (!isRegistering) onBackToLoginClick()
+            }
+        ) {
             Text("Already have an account? Login")
         }
     }
