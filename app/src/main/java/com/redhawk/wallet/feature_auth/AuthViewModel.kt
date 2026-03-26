@@ -14,6 +14,7 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
 
     private val context = getApplication<Application>().applicationContext
 
+
     private val authManager = AuthManager()
     private val sessionManager = SessionManager(context)
     private val repository = AuthRepository(authManager, sessionManager)
