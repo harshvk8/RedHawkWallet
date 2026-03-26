@@ -1,17 +1,13 @@
 package com.redhawk.wallet.ui.navigation
 
-import androidx.compose.runtime.Composable
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.runtime.*
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.redhawk.wallet.qr.QrIdScreen
-import com.redhawk.wallet.ui.screens.DashboardScreen
-import com.redhawk.wallet.ui.screens.EmailVerificationPendingScreen
-import com.redhawk.wallet.ui.screens.LoginScreen
-import com.redhawk.wallet.ui.screens.RegisterScreen
-import com.redhawk.wallet.ui.screens.SplashScreen
-import com.redhawk.wallet.ui.screens.TapToPayViewModel
+import com.redhawk.wallet.ui.screens.*
+import com.redhawk.wallet.data.datasource.FirestoreDataSource
+import com.redhawk.wallet.data.repository.WalletRepository
 
 @Composable
 fun AppNav(
@@ -55,11 +51,7 @@ fun AppNav(
 
         composable(Routes.REGISTER) {
             RegisterScreen(
-                onRegisterClick = { _, _, _, _ ->
-                    navController.navigate(Routes.DASHBOARD) {
-                        popUpTo(Routes.REGISTER) { inclusive = true }
-                    }
-                },
+                onRegisterClick = { _, _, _, _ -> },
                 onBackToLoginClick = {
                     navController.navigate(Routes.LOGIN) {
                         popUpTo(Routes.REGISTER) { inclusive = true }
@@ -69,7 +61,13 @@ fun AppNav(
         }
 
         composable(Routes.DASHBOARD) {
-            val tapVm: TapToPayViewModel = viewModel()
+
+            val tapVm = remember {
+                TapToPayViewModel(
+                    WalletRepository(FirestoreDataSource())
+                )
+            }
+
             DashboardScreen(
                 navController = navController,
                 tapVm = tapVm

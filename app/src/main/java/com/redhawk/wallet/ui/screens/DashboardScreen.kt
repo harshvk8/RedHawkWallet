@@ -65,6 +65,7 @@ fun DashboardScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
+
             Text(
                 text = "Tap an NFC tag to pay $5",
                 color = Color.Gray
