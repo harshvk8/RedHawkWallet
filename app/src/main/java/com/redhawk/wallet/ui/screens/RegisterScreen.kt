@@ -64,6 +64,11 @@ fun RegisterScreen(
     var isRegistering by remember { mutableStateOf(false) }
     var registerError by remember { mutableStateOf<String?>(null) }
 
+    // Professor fields
+    var isProfessor by remember { mutableStateOf(false) }
+    var professorId by remember { mutableStateOf("") }
+    var branch by remember { mutableStateOf("") }
+
     val hasCapitalLetter = password.any { it.isUpperCase() }
     val hasNumber = password.any { it.isDigit() }
     val passwordsMatch = confirmPassword.isNotEmpty() && password == confirmPassword
@@ -76,6 +81,7 @@ fun RegisterScreen(
                 studentId.isNotBlank() &&
                 email.isNotBlank() &&
                 isPasswordValid &&
+                (!isProfessor || (professorId.isNotBlank() && branch.isNotBlank())) && // Added Professor check
                 !nameError &&
                 !studentIdError &&
                 !emailError &&
@@ -106,6 +112,7 @@ fun RegisterScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
+        // --- FULL NAME FIELD ---
         OutlinedTextField(
             value = name,
             onValueChange = { input ->
@@ -126,6 +133,7 @@ fun RegisterScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
+        // --- STUDENT ID FIELD ---
         OutlinedTextField(
             value = studentId,
             onValueChange = { input ->
@@ -149,6 +157,39 @@ fun RegisterScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
+        // --- PROFESSOR TOGGLE + FIELDS ---
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            Checkbox(
+                checked = isProfessor,
+                onCheckedChange = { isProfessor = it }
+            )
+            Text("Register as Professor")
+        }
+
+        if (isProfessor) {
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                value = professorId,
+                onValueChange = { professorId = it },
+                label = { Text("Professor ID") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            OutlinedTextField(
+                value = branch,
+                onValueChange = { branch = it },
+                label = { Text("Branch / Department") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // --- EMAIL FIELD ---
         OutlinedTextField(
             value = email,
             onValueChange = { input ->
@@ -168,6 +209,7 @@ fun RegisterScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
+        // --- PASSWORD FIELD ---
         OutlinedTextField(
             value = password,
             onValueChange = { newValue ->
@@ -200,6 +242,7 @@ fun RegisterScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
+        // --- CONFIRM PASSWORD FIELD ---
         OutlinedTextField(
             value = confirmPassword,
             onValueChange = { newValue ->
@@ -238,6 +281,7 @@ fun RegisterScreen(
             Spacer(modifier = Modifier.height(8.dp))
         }
 
+        // --- REGISTER BUTTON ---
         Button(
             onClick = {
                 val nameOk = isValidName(name)
@@ -246,7 +290,6 @@ fun RegisterScreen(
                 val passOk = isPasswordValid
 
                 registerError = null
-
                 nameError = !nameOk
                 studentIdError = !idOk
                 emailError = !emailOk
@@ -262,11 +305,11 @@ fun RegisterScreen(
                 }
 
                 isRegistering = true
-
                 val e = email.trim()
                 val p = password
+                val role = if (isProfessor) "professor" else "student"
 
-                Log.d("AUTH", "Registering email=$e")
+                Log.d("AUTH", "Registering email=$e as $role")
 
                 auth.createUserWithEmailAndPassword(e, p)
                     .addOnSuccessListener {
@@ -277,10 +320,15 @@ fun RegisterScreen(
                             return@addOnSuccessListener
                         }
 
+                        // 🔥 UPDATED USER MAP WITH ROLE
                         val userMap = hashMapOf(
                             "name" to name.trim(),
                             "studentId" to studentId.trim(),
-                            "email" to e
+                            "email" to e,
+                            "role" to role,
+                            "professorId" to if (isProfessor) professorId.trim() else null,
+                            "branch" to if (isProfessor) branch.trim() else null,
+                            "createdAt" to com.google.firebase.Timestamp.now()
                         )
 
                         db.collection("users").document(uid).set(userMap)
@@ -299,19 +347,16 @@ fun RegisterScreen(
                                     }
                                     ?.addOnFailureListener { ex ->
                                         isRegistering = false
-                                        Log.e("AUTH", "EMAIL VERIFICATION FAILED", ex)
-                                        registerError = "Registered, but failed to send verification email: ${ex.message}"
+                                        registerError = "Verification email failed: ${ex.message}"
                                     }
                             }
                             .addOnFailureListener { ex ->
                                 isRegistering = false
-                                Log.e("AUTH", "PROFILE SAVE FAILED", ex)
                                 registerError = "Profile save failed: ${ex.message}"
                             }
                     }
                     .addOnFailureListener { ex ->
                         isRegistering = false
-                        Log.e("AUTH", "REGISTER FAILED", ex)
                         registerError = ex.message ?: "Register failed"
                     }
             },

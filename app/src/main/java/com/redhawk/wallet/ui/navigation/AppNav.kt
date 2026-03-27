@@ -4,10 +4,13 @@ import androidx.compose.runtime.*
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.navArgument
+import androidx.navigation.NavType
 import com.redhawk.wallet.qr.QrIdScreen
 import com.redhawk.wallet.ui.screens.*
 import com.redhawk.wallet.data.datasource.FirestoreDataSource
 import com.redhawk.wallet.data.repository.WalletRepository
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 @Composable
 fun AppNav(
@@ -21,16 +24,9 @@ fun AppNav(
         composable(Routes.SPLASH) {
             SplashScreen(
                 onNavigateNext = {
-                    val isLoggedIn = false
-
-                    if (isLoggedIn) {
-                        navController.navigate(Routes.DASHBOARD) {
-                            popUpTo(Routes.SPLASH) { inclusive = true }
-                        }
-                    } else {
-                        navController.navigate(Routes.LOGIN) {
-                            popUpTo(Routes.SPLASH) { inclusive = true }
-                        }
+                    // Start at Login for now
+                    navController.navigate(Routes.LOGIN) {
+                        popUpTo(Routes.SPLASH) { inclusive = true }
                     }
                 }
             )
@@ -38,12 +34,20 @@ fun AppNav(
 
         composable(Routes.LOGIN) {
             LoginScreen(
+                navController = navController,
                 onSignUpClick = {
                     navController.navigate(Routes.REGISTER)
                 },
-                onLoginSuccess = {
-                    navController.navigate(Routes.DASHBOARD) {
-                        popUpTo(Routes.LOGIN) { inclusive = true }
+                onLoginSuccess = { role, uid ->
+                    // ✅ This connects the Login Result to the correct Route
+                    if (role == "professor") {
+                        navController.navigate("${Routes.PROFESSOR_ID}/$uid") {
+                            popUpTo(Routes.LOGIN) { inclusive = true }
+                        }
+                    } else {
+                        navController.navigate("${Routes.STUDENT_DASHBOARD}/$uid") {
+                            popUpTo(Routes.LOGIN) { inclusive = true }
+                        }
                     }
                 }
             )
@@ -60,32 +64,50 @@ fun AppNav(
             )
         }
 
-        composable(Routes.DASHBOARD) {
+        // ✅ STUDENT DASHBOARD ROUTE
+        composable(
+            route = "${Routes.STUDENT_DASHBOARD}/{uid}",
+            arguments = listOf(navArgument("uid") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val uid = backStackEntry.arguments?.getString("uid") ?: ""
 
-            val tapVm = remember {
-                TapToPayViewModel(
-                    WalletRepository(FirestoreDataSource())
-                )
-            }
+            // Note: Replace with your actual ViewModel Factory if needed
+            val tapVm: TapToPayViewModel = viewModel()
 
             DashboardScreen(
                 navController = navController,
-                tapVm = tapVm
+                tapVm = tapVm,
+                role = "student",
+                uid = uid
+            )
+        }
+
+        // ✅ PROFESSOR ROUTE
+        composable(
+            route = "${Routes.PROFESSOR_ID}/{uid}",
+            arguments = listOf(navArgument("uid") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val uid = backStackEntry.arguments?.getString("uid") ?: ""
+
+            // You can use a specific Professor screen or the shared Dashboard
+            val tapVm: TapToPayViewModel = viewModel()
+
+            DashboardScreen(
+                navController = navController,
+                tapVm = tapVm,
+                role = "professor",
+                uid = uid
             )
         }
 
         composable(Routes.QR_ID) {
-            QrIdScreen(
-                navController = navController
-            )
+            QrIdScreen(navController = navController)
         }
 
         composable(Routes.EMAIL_VERIFICATION_PENDING) {
             EmailVerificationPendingScreen(
                 onVerified = {
-                    navController.navigate(Routes.DASHBOARD) {
-                        popUpTo(Routes.EMAIL_VERIFICATION_PENDING) { inclusive = true }
-                    }
+                    navController.navigate(Routes.LOGIN)
                 },
                 onBackToLogin = {
                     navController.navigate(Routes.LOGIN) {
