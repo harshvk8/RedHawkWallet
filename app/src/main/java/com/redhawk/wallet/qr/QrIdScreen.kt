@@ -39,7 +39,7 @@ fun QrIdScreen(
     val student = vm.userProfile
     val qrBmp = vm.qrBitmap
 
-    // ✅ Image picker MUST be inside composable
+    //  Image picker MUST be inside composable
     val pickImage = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
@@ -53,7 +53,7 @@ fun QrIdScreen(
         vm.loadStudentProfile()
     }
 
-    // ✅ FALLBACKS so text never shows blank
+    //  FALLBACKS so text never shows blank
     val displayName = student.name.ifBlank { firebaseUser?.displayName ?: "Unknown User" }
     val displayEmail = student.email.ifBlank { firebaseUser?.email ?: "" }
     val displayUid = student.uid.ifBlank { firebaseUser?.uid ?: "" }
@@ -252,8 +252,9 @@ fun QrIdScreen(
                         unfocusedTextColor = Text
                     ),
                     shape = RoundedCornerShape(14.dp),
-                    modifier = Modifier.menuAnchor().fillMaxWidth()
-                )
+                    modifier = Modifier
+                        .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true)
+                        .fillMaxWidth()                )
 
                 ExposedDropdownMenu(
                     expanded = expanded,

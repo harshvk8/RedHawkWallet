@@ -10,4 +10,6 @@ object Routes {
     const val PROFESSOR_ID = "professor_id"
     const val STUDENT_DASHBOARD = "student_dashboard"
     const val TAP_TO_PAY = "tap_to_pay"
+    const val PROFESSOR_SCANNER = "professor_scanner"
+    const val STUDENT_VERIFY_RESULT = "student_verify_result"
 }

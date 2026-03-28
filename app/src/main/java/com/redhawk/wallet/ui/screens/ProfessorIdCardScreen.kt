@@ -1,6 +1,5 @@
 package com.redhawk.wallet.ui.screens
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -11,24 +10,47 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.redhawk.wallet.feature_auth.AuthViewModel
+import com.google.firebase.firestore.FirebaseFirestore
 
 @Composable
 fun ProfessorIdCardScreen(
-    vm: AuthViewModel = viewModel()
+    uid: String
 ) {
-    val uid = vm.authState.collectAsState().value.let { state ->
-        (state as? com.redhawk.wallet.feature_auth.AuthResult.Success)?.uid
-    }
-
-    var profile by remember { mutableStateOf<com.redhawk.wallet.data.models.UserProfile?>(null) }
+    var loading by remember { mutableStateOf(true) }
+    var error by remember { mutableStateOf<String?>(null) }
+    var name by remember { mutableStateOf("") }
+    var professorId by remember { mutableStateOf("") }
+    var branch by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
 
     LaunchedEffect(uid) {
-        if (uid != null) {
-            // fetch professor profile
-            profile = vm.getUserProfile(uid)
+        if (uid.isBlank()) {
+            loading = false
+            error = "Professor UID is missing"
+            return@LaunchedEffect
         }
+
+        FirebaseFirestore.getInstance()
+            .collection("users")
+            .document(uid)
+            .get()
+            .addOnSuccessListener { doc ->
+                loading = false
+
+                if (!doc.exists()) {
+                    error = "Professor profile not found"
+                    return@addOnSuccessListener
+                }
+
+                name = doc.getString("name") ?: ""
+                professorId = doc.getString("professorId") ?: ""
+                branch = doc.getString("branch") ?: ""
+                email = doc.getString("email") ?: ""
+            }
+            .addOnFailureListener { ex ->
+                loading = false
+                error = ex.message ?: "Failed to load professor profile"
+            }
     }
 
     Box(
@@ -37,34 +59,45 @@ fun ProfessorIdCardScreen(
             .padding(24.dp),
         contentAlignment = Alignment.Center
     ) {
-        profile?.let { user ->
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(250.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF1E88E5))
-            ) {
-                Column(
+        when {
+            loading -> {
+                CircularProgressIndicator()
+            }
+
+            error != null -> {
+                Text(
+                    text = error ?: "Unknown error",
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+
+            else -> {
+                Card(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .padding(20.dp),
-                    verticalArrangement = Arrangement.SpaceEvenly
+                        .fillMaxWidth()
+                        .height(260.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1E88E5))
                 ) {
-                    Text(
-                        text = "Professor ID Card",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 22.sp,
-                        color = Color.White
-                    )
-                    Text("Name: ${user.name}", color = Color.White, fontSize = 18.sp)
-                    Text("Professor ID: ${user.professorId}", color = Color.White, fontSize = 18.sp)
-                    Text("Branch: ${user.branch}", color = Color.White, fontSize = 18.sp)
-                    Text("Email: ${user.email}", color = Color.White, fontSize = 18.sp)
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(20.dp),
+                        verticalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        Text(
+                            text = "Professor ID Card",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 22.sp,
+                            color = Color.White
+                        )
+                        Text("Name: $name", color = Color.White, fontSize = 18.sp)
+                        Text("Professor ID: $professorId", color = Color.White, fontSize = 18.sp)
+                        Text("Branch: $branch", color = Color.White, fontSize = 18.sp)
+                        Text("Email: $email", color = Color.White, fontSize = 18.sp)
+                    }
                 }
             }
-        } ?: run {
-            CircularProgressIndicator()
         }
     }
 }

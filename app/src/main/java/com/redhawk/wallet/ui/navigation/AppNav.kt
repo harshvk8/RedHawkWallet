@@ -1,35 +1,28 @@
 package com.redhawk.wallet.ui.navigation
 
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.navArgument
 import androidx.navigation.NavType
+import androidx.navigation.compose.*
+import androidx.navigation.navArgument
 import com.redhawk.wallet.qr.QrIdScreen
 import com.redhawk.wallet.ui.screens.*
-import com.redhawk.wallet.data.datasource.FirestoreDataSource
-import com.redhawk.wallet.data.repository.WalletRepository
-import androidx.lifecycle.viewmodel.compose.viewModel
 
 @Composable
-fun AppNav(
-    navController: NavHostController
-) {
+fun AppNav(navController: NavHostController) {
+
     NavHost(
         navController = navController,
         startDestination = Routes.SPLASH
     ) {
 
         composable(Routes.SPLASH) {
-            SplashScreen(
-                onNavigateNext = {
-                    // Start at Login for now
-                    navController.navigate(Routes.LOGIN) {
-                        popUpTo(Routes.SPLASH) { inclusive = true }
-                    }
+            SplashScreen {
+                navController.navigate(Routes.LOGIN) {
+                    popUpTo(Routes.SPLASH) { inclusive = true }
                 }
-            )
+            }
         }
 
         composable(Routes.LOGIN) {
@@ -39,7 +32,6 @@ fun AppNav(
                     navController.navigate(Routes.REGISTER)
                 },
                 onLoginSuccess = { role, uid ->
-                    // ✅ This connects the Login Result to the correct Route
                     if (role == "professor") {
                         navController.navigate("${Routes.PROFESSOR_ID}/$uid") {
                             popUpTo(Routes.LOGIN) { inclusive = true }
@@ -64,14 +56,11 @@ fun AppNav(
             )
         }
 
-        // ✅ STUDENT DASHBOARD ROUTE
         composable(
-            route = "${Routes.STUDENT_DASHBOARD}/{uid}",
+            "${Routes.STUDENT_DASHBOARD}/{uid}",
             arguments = listOf(navArgument("uid") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val uid = backStackEntry.arguments?.getString("uid") ?: ""
-
-            // Note: Replace with your actual ViewModel Factory if needed
+        ) {
+            val uid = it.arguments?.getString("uid") ?: ""
             val tapVm: TapToPayViewModel = viewModel()
 
             DashboardScreen(
@@ -82,14 +71,11 @@ fun AppNav(
             )
         }
 
-        // ✅ PROFESSOR ROUTE
         composable(
-            route = "${Routes.PROFESSOR_ID}/{uid}",
+            "${Routes.PROFESSOR_ID}/{uid}",
             arguments = listOf(navArgument("uid") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val uid = backStackEntry.arguments?.getString("uid") ?: ""
-
-            // You can use a specific Professor screen or the shared Dashboard
+        ) {
+            val uid = it.arguments?.getString("uid") ?: ""
             val tapVm: TapToPayViewModel = viewModel()
 
             DashboardScreen(
@@ -104,10 +90,24 @@ fun AppNav(
             QrIdScreen(navController = navController)
         }
 
+        composable(Routes.PROFESSOR_SCANNER) {
+            ProfessorScannerScreen(navController = navController)
+        }
+
+        composable(
+            "${Routes.STUDENT_VERIFY_RESULT}/{studentUid}",
+            arguments = listOf(navArgument("studentUid") { type = NavType.StringType })
+        ) {
+            val studentUid = it.arguments?.getString("studentUid") ?: ""
+            StudentVerificationResultScreen(navController, studentUid)
+        }
+
         composable(Routes.EMAIL_VERIFICATION_PENDING) {
             EmailVerificationPendingScreen(
                 onVerified = {
-                    navController.navigate(Routes.LOGIN)
+                    navController.navigate(Routes.LOGIN) {
+                        popUpTo(Routes.EMAIL_VERIFICATION_PENDING) { inclusive = true }
+                    }
                 },
                 onBackToLogin = {
                     navController.navigate(Routes.LOGIN) {
