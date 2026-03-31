@@ -144,7 +144,7 @@ fun RegisterScreen(
                 studentId = filtered.take(9)
                 studentIdError = studentId.isNotEmpty() && !isValidStudentId(studentId)
             },
-            label = { Text("Student ID (M########)") },
+            label = { Text("University ID (M########)") }, //Changed student id to university id for universal id
             singleLine = true,
             isError = studentIdError,
             supportingText = {
