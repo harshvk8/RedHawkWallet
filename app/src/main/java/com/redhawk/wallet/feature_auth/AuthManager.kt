@@ -57,7 +57,7 @@ class AuthManager {
             Result.failure(e)
         }
     }
-
+//new
     suspend fun sendEmailVerification(): Result<Unit> {
         return try {
             firebaseAuth.currentUser?.sendEmailVerification()?.await()
