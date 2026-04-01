@@ -112,6 +112,9 @@ fun AppNav(navController: NavHostController) {
                 onBackToLogin = {
                     navController.navigate(Routes.LOGIN) {
                         popUpTo(0) { inclusive = true }
+                        composable(Routes.QR_SCANNER) {
+                            QrScannerScreen(navController)
+                        }
                     }
                 }
             )

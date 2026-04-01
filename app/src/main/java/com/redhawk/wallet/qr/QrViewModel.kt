@@ -107,10 +107,12 @@ class QrViewModel : ViewModel() {
             }
     }
 
+    // ✅ UPDATED FUNCTION (ONLY PART CHANGED)
     fun generateQrIfNeeded() {
         if (qrBitmap != null) return
+        if (userProfile.uid.isBlank()) return   // ✅ added safety
 
-        val payload = "MSU|${userProfile.uid}|${userProfile.studentId}"
+        val payload = userProfile.uid   // ✅ THIS IS THE FIX
         qrBitmap = QrCodeGenerator.generateQrBitmap(payload)
     }
 

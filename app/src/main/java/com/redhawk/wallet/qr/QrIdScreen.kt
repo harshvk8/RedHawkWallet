@@ -300,6 +300,14 @@ fun QrIdScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("Logout", fontWeight = FontWeight.Bold)
+                    Button(
+                        onClick = {
+                            navController.navigate(Routes.QR_SCANNER)
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Scan QR Code")
+                    }
                 }
             }
         }

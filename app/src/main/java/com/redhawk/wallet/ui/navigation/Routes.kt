@@ -12,4 +12,5 @@ object Routes {
     const val TAP_TO_PAY = "tap_to_pay"
     const val PROFESSOR_SCANNER = "professor_scanner"
     const val STUDENT_VERIFY_RESULT = "student_verify_result"
+    const val QR_SCANNER = "qr_scanner"
 }
