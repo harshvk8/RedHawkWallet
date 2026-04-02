@@ -11,6 +11,7 @@ import com.redhawk.wallet.feature_auth.AuthViewModel
 import com.redhawk.wallet.ui.screens.DashboardScreen
 import com.redhawk.wallet.ui.screens.EmailVerificationPendingScreen
 import com.redhawk.wallet.ui.screens.LoginScreen
+import com.redhawk.wallet.ui.screens.RegisterScreen
 import com.redhawk.wallet.ui.screens.SplashScreen
 import com.redhawk.wallet.ui.screens.TapToPayViewModel
 import com.redhawk.wallet.ui.screens.TapToPayViewModelFactory
@@ -20,12 +21,6 @@ fun AppNav(
     navController: NavHostController,
     authViewModel: AuthViewModel = viewModel()
 ) {
-    val tapVm: TapToPayViewModel = viewModel(
-        factory = TapToPayViewModelFactory(
-            WalletRepository(FirestoreDataSource())
-        )
-    )
-
     NavHost(
         navController = navController,
         startDestination = Routes.SPLASH
@@ -60,17 +55,44 @@ fun AppNav(
             )
         }
 
+        // ✅ Using the exact parameter names from RegisterScreen.kt
+        composable(Routes.REGISTER) {
+            RegisterScreen(
+                onRegisterClick = { _, _, _, _ -> },
+                onBackToLoginClick = {
+                    navController.navigate(Routes.LOGIN) {
+                        popUpTo(Routes.REGISTER) { inclusive = true }
+                    }
+                }
+            )
+        }
+
         composable(Routes.DASHBOARD) {
+            val tapVm: TapToPayViewModel = viewModel(
+                factory = TapToPayViewModelFactory(
+                    WalletRepository(FirestoreDataSource())
+                )
+            )
             DashboardScreen(
                 navController = navController,
                 tapVm = tapVm
             )
         }
 
+        // ✅ Using the exact parameter names from EmailVerificationPendingScreen.kt
         composable(Routes.EMAIL_VERIFICATION) {
             EmailVerificationPendingScreen(
-                navController = navController,
-                authViewModel = authViewModel
+                authViewModel = authViewModel,
+                onVerified = {
+                    navController.navigate(Routes.DASHBOARD) {
+                        popUpTo(Routes.EMAIL_VERIFICATION) { inclusive = true }
+                    }
+                },
+                onBackToLogin = {
+                    navController.navigate(Routes.LOGIN) {
+                        popUpTo(Routes.EMAIL_VERIFICATION) { inclusive = true }
+                    }
+                }
             )
         }
     }
