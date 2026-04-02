@@ -1,90 +1,73 @@
 package com.redhawk.wallet.feature_auth
 
-import android.util.Log
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
 
-class AuthRepository {
+class AuthRepository(
+    private val authManager: AuthManager,
+    private val sessionManager: SessionManager
+) {
 
-    private val auth = FirebaseAuth.getInstance()
-    private val db = FirebaseFirestore.getInstance()
+    private val firebaseAuth: FirebaseAuth = FirebaseAuth.getInstance()
 
-    suspend fun registerIfAllowed(
-        name: String,
-        studentId: String,
-        email: String,
-        password: String
-    ): AuthResult {
+
+    suspend fun register(email: String, password: String): Result<String> {
         return try {
 
-            Log.d("AUTH", "Checking allowed_users in Firestore...")
+            authManager.signOut()
+            sessionManager.logout()
 
-            val allowedDoc = db.collection("allowed_users")
-                .document(email)
-                .get()
+
+            val result = firebaseAuth
+                .createUserWithEmailAndPassword(email, password)
                 .await()
 
-            Log.d("AUTH", "Allowed doc exists = ${allowedDoc.exists()}")
+            val user = result.user
 
-            if (!allowedDoc.exists()) {
-                return AuthResult.Error("You are not allowed to register. Contact admin.")
+            if (user != null) {
+
+                user.sendEmailVerification().await()
+
+
+                sessionManager.setLoggedIn(true)
+                sessionManager.setUserId(user.uid)
+
+                Result.success(user.uid)
+            } else {
+                Result.failure(Exception("User creation failed"))
             }
-
-            val enabled = allowedDoc.getBoolean("enabled") ?: false
-            if (!enabled) {
-                return AuthResult.Error("Your account is disabled. Contact admin.")
-            }
-
-            val allowedStudentId = allowedDoc.getString("studentId") ?: ""
-            if (allowedStudentId != studentId) {
-                return AuthResult.Error("Student ID does not match records.")
-            }
-
-            Log.d("AUTH", "Creating Firebase Auth user...")
-
-            val result = auth.createUserWithEmailAndPassword(email, password).await()
-            val uid = result.user?.uid ?: return AuthResult.Error("Registration failed")
-
-            Log.d("AUTH", "Auth created UID = $uid")
-
-            val profile = hashMapOf(
-                "uid" to uid,
-                "name" to name,
-                "studentId" to studentId,
-                "email" to email
-            )
-
-            Log.d("AUTH", "Saving profile to Firestore...")
-
-            db.collection("users")
-                .document(uid)
-                .set(profile)
-                .await()
-
-            Log.d("AUTH", "Profile saved successfully")
-
-            AuthResult.Success(uid)
 
         } catch (e: Exception) {
-            Log.e("AUTH", "Register failed", e)
-            AuthResult.Error(e.message ?: "Registration error")
+            Result.failure(e)
         }
     }
 
-    suspend fun login(email: String, password: String): AuthResult {
+
+    suspend fun login(email: String, password: String): Result<String> {
         return try {
-            Log.d("AUTH", "Logging in...")
+            val result = firebaseAuth
+                .signInWithEmailAndPassword(email, password)
+                .await()
 
-            val result = auth.signInWithEmailAndPassword(email, password).await()
-            val uid = result.user?.uid ?: return AuthResult.Error("Login failed")
+            val user = result.user
 
-            Log.d("AUTH", "Login success UID = $uid")
-            AuthResult.Success(uid)
+            if (user != null) {
+                sessionManager.setLoggedIn(true)
+                sessionManager.setUserId(user.uid)
+
+                Result.success(user.uid)
+            } else {
+                Result.failure(Exception("Login failed"))
+            }
 
         } catch (e: Exception) {
-            Log.e("AUTH", "Login failed", e)
-            AuthResult.Error(e.message ?: "Login error")
+            Result.failure(e)
         }
+    }
+
+
+    fun logout() {
+        authManager.signOut()
+        sessionManager.logout()
     }
 }

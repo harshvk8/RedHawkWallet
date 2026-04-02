@@ -33,7 +33,7 @@ class FirestoreDataSource(
     // -----------------------------
     suspend fun initWallet(uid: String, initialBalance: Double = 200.0) {
         val wallet = Wallet(
-            uid = uid,
+            uid = uid
             balance = initialBalance,
             updatedAt = System.currentTimeMillis()
         )
@@ -169,3 +169,4 @@ class FirestoreDataSource(
         return snap.toObjects(clazz)
     }
 }
+//Changed this file yesterday

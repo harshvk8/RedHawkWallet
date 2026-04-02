@@ -5,10 +5,12 @@ import android.content.Context
 class SessionManager(context: Context) {
 
     private val sharedPreferences =
-        context.getSharedPreferences("user_session", Context.MODE_PRIVATE)
+        context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
 
     companion object {
+        private const val PREF_NAME = "user_session"
         private const val KEY_IS_LOGGED_IN = "is_logged_in"
+        private const val KEY_USER_ID = "user_id"
     }
 
     fun setLoggedIn(isLoggedIn: Boolean) {
@@ -17,11 +19,23 @@ class SessionManager(context: Context) {
             .apply()
     }
 
+    fun setUserId(userId: String) {
+        sharedPreferences.edit()
+            .putString(KEY_USER_ID, userId)
+            .apply()
+    }
+
+
     fun isLoggedIn(): Boolean {
         return sharedPreferences.getBoolean(KEY_IS_LOGGED_IN, false)
     }
 
-    fun clearSession() {
+    fun getUserId(): String? {
+        return sharedPreferences.getString(KEY_USER_ID, null)
+    }
+
+
+    fun logout() {
         sharedPreferences.edit()
             .clear()
             .apply()

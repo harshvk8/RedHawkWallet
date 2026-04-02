@@ -33,6 +33,8 @@ fun TransactionItem(
             style = MaterialTheme.typography.bodySmall
         )
 
-        Divider(modifier = Modifier.padding(top = 8.dp))
+        HorizontalDivider(
+            modifier = Modifier.padding(top = 8.dp)
+        )
     }
 }

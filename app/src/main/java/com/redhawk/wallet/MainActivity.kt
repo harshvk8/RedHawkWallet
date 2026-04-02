@@ -7,6 +7,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.compose.rememberNavController
+import com.google.firebase.auth.FirebaseAuth
 import com.redhawk.wallet.data.datasource.FirestoreDataSource
 import com.redhawk.wallet.data.repository.WalletRepository
 import com.redhawk.wallet.nfc.NfcManager
@@ -19,8 +21,6 @@ import kotlinx.coroutines.launch
 class MainActivity : ComponentActivity() {
 
     private lateinit var nfcManager: NfcManager
-
-    // ✅ Firestore wallet + tap-to-pay repo
     private val walletRepo by lazy { WalletRepository(FirestoreDataSource()) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -29,23 +29,34 @@ class MainActivity : ComponentActivity() {
 
         Log.d("NFC_TEST", "MainActivity started")
 
-        // Initialize NFC
         nfcManager = NfcManager(this)
 
-        // OPTIONAL: Seed demo offline tokens (you can keep or remove)
-        val repo = NfcRepository(this)
-        lifecycleScope.launch {
-            repo.fetchOfflineTokens(
-                userId = "demoUser123",
-                count = 5,
-                amountCents = 200
-            )
-            Log.d("NFC_TEST", "Tokens seeded")
+        // ✅ FIX 3: Only seed NFC tokens if a real user is logged in.
+        // The old code ran fetchOfflineTokens with "demoUser123" on EVERY cold
+        // start — before login — which caused Firestore permission crashes.
+        val currentUser = FirebaseAuth.getInstance().currentUser
+        if (currentUser != null) {
+            val repo = NfcRepository(this)
+            lifecycleScope.launch {
+                try {
+                    repo.fetchOfflineTokens(
+                        userId = currentUser.uid,
+                        count = 5,
+                        amountCents = 200
+                    )
+                    Log.d("NFC_TEST", "Tokens seeded for uid=${currentUser.uid}")
+                } catch (e: Exception) {
+                    // ✅ FIX 4: Swallow token-seed errors so they never crash the app
+                    Log.e("NFC_TEST", "Token seed failed (non-fatal): ${e.message}")
+                }
+            }
+        } else {
+            Log.d("NFC_TEST", "No logged-in user — skipping token seed until after login")
         }
 
         setContent {
             RedHawkWalletTheme {
-                val navController = androidx.navigation.compose.rememberNavController()
+                val navController = rememberNavController()
                 AppNav(navController = navController)
             }
         }
@@ -68,14 +79,12 @@ class MainActivity : ComponentActivity() {
 
         when (result) {
             is NfcResult.Success -> {
-                // ✅ token from NFC (tag/card/other phone)
                 val nfcToken = result.token
                 Log.d("NFC", "Token received: $nfcToken")
 
-                // ✅ Deduct $5 + store transaction using the NFC token
                 lifecycleScope.launch {
                     try {
-                        val user = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+                        val user = FirebaseAuth.getInstance().currentUser
                         val uid = user?.uid.orEmpty()
 
                         if (uid.isBlank()) {
@@ -83,18 +92,11 @@ class MainActivity : ComponentActivity() {
                             return@launch
                         }
 
-                        // ✅ Ensure wallet exists (200) for demo
                         val existing = walletRepo.getWallet(uid)
-                        if (existing == null) {
-                            walletRepo.initWallet(uid) // creates $200
-                        }
+                        if (existing == null) walletRepo.initWallet(uid)
 
-                        // ✅ IMPORTANT: call a version that accepts token
-                        // We'll add this function below (small change)
                         walletRepo.tapAndPayWithToken(uid, nfcToken)
-
                         Log.d("NFC", "Payment success: -$5, token saved: $nfcToken")
-                        // Dashboard will update when it reloads / or you can trigger a shared refresh state
 
                     } catch (e: Exception) {
                         Log.e("NFC", "Payment failed: ${e.message}", e)

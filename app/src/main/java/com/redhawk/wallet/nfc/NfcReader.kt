@@ -4,6 +4,8 @@ import android.content.Intent
 import android.nfc.NdefMessage
 import android.nfc.NfcAdapter
 import android.nfc.Tag
+import android.os.Build
+import android.os.Parcelable
 
 class NfcReader {
 
@@ -21,7 +23,13 @@ class NfcReader {
 
         readNdefText(intent)?.let { return NfcResult.Success(it) }
 
-        val tag: Tag? = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG)
+        val tag: Tag? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            intent.getParcelableExtra(NfcAdapter.EXTRA_TAG, Tag::class.java)
+        } else {
+            @Suppress("DEPRECATION")
+            intent.getParcelableExtra(NfcAdapter.EXTRA_TAG)
+        }
+
         val tagId = tag?.id?.let { NfcUtils.run { it.toHexString() } }
 
         return if (!tagId.isNullOrBlank()) {
@@ -32,8 +40,18 @@ class NfcReader {
     }
 
     private fun readNdefText(intent: Intent): String? {
-        val rawMsgs = intent.getParcelableArrayExtra(NfcAdapter.EXTRA_NDEF_MESSAGES) ?: return null
-        val msg = rawMsgs.firstOrNull() as? NdefMessage ?: return null
+        val rawMsgs: Array<Parcelable>? =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                intent.getParcelableArrayExtra(
+                    NfcAdapter.EXTRA_NDEF_MESSAGES,
+                    Parcelable::class.java
+                )
+            } else {
+                @Suppress("DEPRECATION")
+                intent.getParcelableArrayExtra(NfcAdapter.EXTRA_NDEF_MESSAGES)
+            }
+
+        val msg = rawMsgs?.firstOrNull() as? NdefMessage ?: return null
 
         for (record in msg.records) {
             val parsed = NfcUtils.parseTextRecord(record)

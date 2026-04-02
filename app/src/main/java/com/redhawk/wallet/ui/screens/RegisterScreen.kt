@@ -64,6 +64,11 @@ fun RegisterScreen(
     var isRegistering by remember { mutableStateOf(false) }
     var registerError by remember { mutableStateOf<String?>(null) }
 
+    // Professor fields
+    var isProfessor by remember { mutableStateOf(false) }
+    var professorId by remember { mutableStateOf("") }
+    var branch by remember { mutableStateOf("") }
+
     val hasCapitalLetter = password.any { it.isUpperCase() }
     val hasNumber = password.any { it.isDigit() }
     val passwordsMatch = confirmPassword.isNotEmpty() && password == confirmPassword
@@ -76,6 +81,7 @@ fun RegisterScreen(
                 studentId.isNotBlank() &&
                 email.isNotBlank() &&
                 isPasswordValid &&
+                (!isProfessor || (professorId.isNotBlank() && branch.isNotBlank())) && // Added Professor check
                 !nameError &&
                 !studentIdError &&
                 !emailError &&
@@ -106,7 +112,7 @@ fun RegisterScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Full Name
+        // --- FULL NAME FIELD ---
         OutlinedTextField(
             value = name,
             onValueChange = { input ->
@@ -117,13 +123,17 @@ fun RegisterScreen(
             label = { Text("Full Name") },
             singleLine = true,
             isError = nameError,
-            supportingText = { if (nameError) Text("Name must contain letters only") },
+            supportingText = {
+                if (nameError) {
+                    Text("Name must contain letters only")
+                }
+            },
             modifier = Modifier.fillMaxWidth()
         )
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Student ID
+        // --- STUDENT ID FIELD ---
         OutlinedTextField(
             value = studentId,
             onValueChange = { input ->
@@ -134,16 +144,52 @@ fun RegisterScreen(
                 studentId = filtered.take(9)
                 studentIdError = studentId.isNotEmpty() && !isValidStudentId(studentId)
             },
-            label = { Text("Student ID (M########)") },
+            label = { Text("University ID (M########)") }, //Changed student id to university id for universal id
             singleLine = true,
             isError = studentIdError,
-            supportingText = { if (studentIdError) Text("Must start with M + 8 digits (ex: M12345678)") },
+            supportingText = {
+                if (studentIdError) {
+                    Text("Must start with M + 8 digits (ex: M12345678)")
+                }
+            },
             modifier = Modifier.fillMaxWidth()
         )
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Email
+        // --- PROFESSOR TOGGLE + FIELDS ---
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            Checkbox(
+                checked = isProfessor,
+                onCheckedChange = { isProfessor = it }
+            )
+            Text("Register as Professor")
+        }
+
+        if (isProfessor) {
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                value = professorId,
+                onValueChange = { professorId = it },
+                label = { Text("Professor ID") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            OutlinedTextField(
+                value = branch,
+                onValueChange = { branch = it },
+                label = { Text("Branch / Department") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // --- EMAIL FIELD ---
         OutlinedTextField(
             value = email,
             onValueChange = { input ->
@@ -153,13 +199,17 @@ fun RegisterScreen(
             label = { Text("Email (@montclair.edu)") },
             singleLine = true,
             isError = emailError,
-            supportingText = { if (emailError) Text("Email must end with @montclair.edu") },
+            supportingText = {
+                if (emailError) {
+                    Text("Email must end with @montclair.edu")
+                }
+            },
             modifier = Modifier.fillMaxWidth()
         )
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Password
+        // --- PASSWORD FIELD ---
         OutlinedTextField(
             value = password,
             onValueChange = { newValue ->
@@ -168,7 +218,11 @@ fun RegisterScreen(
             },
             label = { Text("Password") },
             singleLine = true,
-            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+            visualTransformation = if (passwordVisible) {
+                VisualTransformation.None
+            } else {
+                PasswordVisualTransformation()
+            },
             trailingIcon = {
                 TextButton(onClick = { passwordVisible = !passwordVisible }) {
                     Text(if (passwordVisible) "HIDE" else "SHOW")
@@ -188,7 +242,7 @@ fun RegisterScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Confirm Password
+        // --- CONFIRM PASSWORD FIELD ---
         OutlinedTextField(
             value = confirmPassword,
             onValueChange = { newValue ->
@@ -198,8 +252,16 @@ fun RegisterScreen(
             label = { Text("Confirm Password") },
             singleLine = true,
             isError = passwordMatchError,
-            supportingText = { if (passwordMatchError) Text("Passwords do not match") },
-            visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+            supportingText = {
+                if (passwordMatchError) {
+                    Text("Passwords do not match")
+                }
+            },
+            visualTransformation = if (confirmPasswordVisible) {
+                VisualTransformation.None
+            } else {
+                PasswordVisualTransformation()
+            },
             trailingIcon = {
                 TextButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
                     Text(if (confirmPasswordVisible) "HIDE" else "SHOW")
@@ -210,7 +272,6 @@ fun RegisterScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Show error text if any
         if (!registerError.isNullOrBlank()) {
             Text(
                 text = registerError!!,
@@ -220,21 +281,35 @@ fun RegisterScreen(
             Spacer(modifier = Modifier.height(8.dp))
         }
 
+        // --- REGISTER BUTTON ---
         Button(
             onClick = {
+                val nameOk = isValidName(name)
+                val idOk = isValidStudentId(studentId)
+                val emailOk = isValidMontclairEmail(email)
+                val passOk = isPasswordValid
+
                 registerError = null
+                nameError = !nameOk
+                studentIdError = !idOk
+                emailError = !emailOk
+                passwordMatchError = !passOk
 
                 if (!isFormValid) {
-                    Toast.makeText(context, "Please fix errors before registering", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        context,
+                        "Please fill details correctly before registering",
+                        Toast.LENGTH_SHORT
+                    ).show()
                     return@Button
                 }
 
                 isRegistering = true
-
                 val e = email.trim()
                 val p = password
+                val role = if (isProfessor) "professor" else "student"
 
-                Log.d("AUTH", "Registering email=$e")
+                Log.d("AUTH", "Registering email=$e as $role")
 
                 auth.createUserWithEmailAndPassword(e, p)
                     .addOnSuccessListener {
@@ -245,38 +320,47 @@ fun RegisterScreen(
                             return@addOnSuccessListener
                         }
 
+                        // 🔥 UPDATED USER MAP WITH ROLE
                         val userMap = hashMapOf(
                             "name" to name.trim(),
                             "studentId" to studentId.trim(),
-                            "email" to e
+                            "email" to e,
+                            "role" to role,
+                            "professorId" to if (isProfessor) professorId.trim() else null,
+                            "branch" to if (isProfessor) branch.trim() else null,
+                            "createdAt" to com.google.firebase.Timestamp.now()
                         )
 
-                        // ✅ Save profile FIRST
                         db.collection("users").document(uid).set(userMap)
                             .addOnSuccessListener {
-                                isRegistering = false
-                                Log.d("AUTH", "REGISTER+PROFILE OK uid=$uid")
-                                Toast.makeText(context, "Registered!", Toast.LENGTH_SHORT).show()
+                                auth.currentUser?.sendEmailVerification()
+                                    ?.addOnSuccessListener {
+                                        isRegistering = false
+                                        Log.d("AUTH", "REGISTER+PROFILE OK uid=$uid")
+                                        Toast.makeText(
+                                            context,
+                                            "Registered! Verification email sent.",
+                                            Toast.LENGTH_LONG
+                                        ).show()
 
-                                // optional callback if you still use it
-                                onRegisterClick(name.trim(), studentId.trim(), e, p)
-
-                                // ✅ Navigate ONLY after Firestore save succeeds
-                                onBackToLoginClick()
+                                        onBackToLoginClick()
+                                    }
+                                    ?.addOnFailureListener { ex ->
+                                        isRegistering = false
+                                        registerError = "Verification email failed: ${ex.message}"
+                                    }
                             }
                             .addOnFailureListener { ex ->
                                 isRegistering = false
-                                Log.e("AUTH", "PROFILE SAVE FAILED", ex)
                                 registerError = "Profile save failed: ${ex.message}"
                             }
                     }
                     .addOnFailureListener { ex ->
                         isRegistering = false
-                        Log.e("AUTH", "REGISTER FAILED", ex)
                         registerError = ex.message ?: "Register failed"
                     }
             },
-            enabled = !isRegistering,
+            enabled = isFormValid && !isRegistering,
             modifier = Modifier.fillMaxWidth()
         ) {
             if (isRegistering) {
@@ -284,14 +368,18 @@ fun RegisterScreen(
                     modifier = Modifier.size(18.dp),
                     strokeWidth = 2.dp
                 )
-                Spacer(Modifier.width(10.dp))
+                Spacer(modifier = Modifier.width(10.dp))
             }
             Text(if (isRegistering) "Creating..." else "Register")
         }
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        TextButton(onClick = { if (!isRegistering) onBackToLoginClick() }) {
+        TextButton(
+            onClick = {
+                if (!isRegistering) onBackToLoginClick()
+            }
+        ) {
             Text("Already have an account? Login")
         }
     }
