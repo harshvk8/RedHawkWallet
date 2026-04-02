@@ -251,7 +251,9 @@ fun QrIdScreen(
                         unfocusedTextColor = Text
                     ),
                     shape = RoundedCornerShape(14.dp),
-                    modifier = Modifier.menuAnchor().fillMaxWidth()
+                    modifier = Modifier
+                        .menuAnchor()
+                        .fillMaxWidth()
                 )
 
                 ExposedDropdownMenu(
