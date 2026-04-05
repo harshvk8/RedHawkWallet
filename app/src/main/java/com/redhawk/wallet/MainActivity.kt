@@ -6,11 +6,13 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.rememberNavController
 import com.google.firebase.auth.FirebaseAuth
 import com.redhawk.wallet.data.datasource.FirestoreDataSource
 import com.redhawk.wallet.data.repository.WalletRepository
+import com.redhawk.wallet.feature_auth.AuthViewModel
 import com.redhawk.wallet.nfc.NfcManager
 import com.redhawk.wallet.nfc.NfcRepository
 import com.redhawk.wallet.nfc.NfcResult
@@ -23,6 +25,8 @@ class MainActivity : ComponentActivity() {
     private lateinit var nfcManager: NfcManager
     private val walletRepo by lazy { WalletRepository(FirestoreDataSource()) }
 
+    private val authViewModel: AuthViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -31,9 +35,6 @@ class MainActivity : ComponentActivity() {
 
         nfcManager = NfcManager(this)
 
-        // ✅ FIX 3: Only seed NFC tokens if a real user is logged in.
-        // The old code ran fetchOfflineTokens with "demoUser123" on EVERY cold
-        // start — before login — which caused Firestore permission crashes.
         val currentUser = FirebaseAuth.getInstance().currentUser
         if (currentUser != null) {
             val repo = NfcRepository(this)
@@ -46,7 +47,6 @@ class MainActivity : ComponentActivity() {
                     )
                     Log.d("NFC_TEST", "Tokens seeded for uid=${currentUser.uid}")
                 } catch (e: Exception) {
-                    // ✅ FIX 4: Swallow token-seed errors so they never crash the app
                     Log.e("NFC_TEST", "Token seed failed (non-fatal): ${e.message}")
                 }
             }
@@ -57,7 +57,10 @@ class MainActivity : ComponentActivity() {
         setContent {
             RedHawkWalletTheme {
                 val navController = rememberNavController()
-                AppNav(navController = navController)
+                AppNav(
+                    navController = navController,
+                    authViewModel = authViewModel
+                )
             }
         }
     }

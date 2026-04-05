@@ -1,12 +1,24 @@
 package com.redhawk.wallet.qr
 
 import android.widget.Toast
-import androidx.camera.core.*
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageAnalysis
+import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -21,29 +33,23 @@ import java.util.concurrent.Executors
 
 @Composable
 fun QrScannerScreen(navController: NavController) {
-
     val context = LocalContext.current
     val scanner = BarcodeScanning.getClient()
     val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
     val firestore = FirebaseFirestore.getInstance()
 
-    //  STATE VARIABLES (TOP OF FILE)
-    var scannedValue by remember { mutableStateOf("") }
     var scannedUserName by remember { mutableStateOf("") }
     var scannedUserId by remember { mutableStateOf("") }
     var scannedUserExists by remember { mutableStateOf(false) }
     var amount by remember { mutableStateOf("") }
 
     Column(modifier = Modifier.fillMaxSize()) {
-
-        // 🔹 TITLE
         Text(
             text = "Scan QR Code",
             style = MaterialTheme.typography.titleLarge,
             modifier = Modifier.padding(16.dp)
         )
 
-        // 🔹 CAMERA PREVIEW (MIDDLE OF SCREEN)
         AndroidView(
             factory = { ctx ->
                 val previewView = PreviewView(ctx)
@@ -60,7 +66,6 @@ fun QrScannerScreen(navController: NavController) {
                         it.setAnalyzer(cameraExecutor) { imageProxy ->
                             val mediaImage = imageProxy.image
                             if (mediaImage != null) {
-
                                 val image = InputImage.fromMediaImage(
                                     mediaImage,
                                     imageProxy.imageInfo.rotationDegrees
@@ -69,13 +74,7 @@ fun QrScannerScreen(navController: NavController) {
                                 scanner.process(image)
                                     .addOnSuccessListener { barcodes ->
                                         for (barcode in barcodes) {
-
-                                            //  THIS IS THE MOST IMPORTANT PART
                                             barcode.rawValue?.let { uid ->
-
-                                                scannedValue = uid
-
-                                                //  FETCH USER FROM FIREBASE
                                                 firestore.collection("users")
                                                     .document(uid)
                                                     .get()
@@ -83,7 +82,7 @@ fun QrScannerScreen(navController: NavController) {
                                                         if (doc.exists()) {
                                                             scannedUserExists = true
                                                             scannedUserName =
-                                                                doc.getString("username") ?: "Unknown User"
+                                                                doc.getString("name") ?: "Unknown User"
                                                             scannedUserId = uid
                                                         } else {
                                                             scannedUserExists = false
@@ -95,6 +94,8 @@ fun QrScannerScreen(navController: NavController) {
                                     .addOnCompleteListener {
                                         imageProxy.close()
                                     }
+                            } else {
+                                imageProxy.close()
                             }
                         }
                     }
@@ -106,7 +107,6 @@ fun QrScannerScreen(navController: NavController) {
                         preview,
                         analyzer
                     )
-
                 }, ContextCompat.getMainExecutor(ctx))
 
                 previewView
@@ -116,9 +116,7 @@ fun QrScannerScreen(navController: NavController) {
                 .weight(1f)
         )
 
-        // 🔹 SHOW SCANNED USER + PAYMENT UI (BOTTOM)
         if (scannedUserExists) {
-
             Text(
                 text = "Send money to: $scannedUserName",
                 style = MaterialTheme.typography.titleMedium,
@@ -137,12 +135,7 @@ fun QrScannerScreen(navController: NavController) {
             Button(
                 onClick = {
                     sendMoney(scannedUserId, amount)
-
-                    Toast.makeText(
-                        context,
-                        "Payment Sent!",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    Toast.makeText(context, "Payment Sent!", Toast.LENGTH_SHORT).show()
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -154,7 +147,6 @@ fun QrScannerScreen(navController: NavController) {
     }
 }
 
-//  MONEY TRANSFER FUNCTION (BOTTOM OF FILE)
 fun sendMoney(receiverUid: String, amount: String) {
     val senderUid = FirebaseAuth.getInstance().currentUser?.uid ?: return
     val firestore = FirebaseFirestore.getInstance()
@@ -165,7 +157,6 @@ fun sendMoney(receiverUid: String, amount: String) {
     val receiverRef = firestore.collection("users").document(receiverUid)
 
     firestore.runTransaction { transaction ->
-
         val senderSnap = transaction.get(senderRef)
         val receiverSnap = transaction.get(receiverRef)
 
