@@ -27,7 +27,7 @@ fun QrScannerScreen(navController: NavController) {
     val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
     val firestore = FirebaseFirestore.getInstance()
 
-    // ✅ STATE VARIABLES (TOP OF FILE)
+    //  STATE VARIABLES (TOP OF FILE)
     var scannedValue by remember { mutableStateOf("") }
     var scannedUserName by remember { mutableStateOf("") }
     var scannedUserId by remember { mutableStateOf("") }
@@ -70,12 +70,12 @@ fun QrScannerScreen(navController: NavController) {
                                     .addOnSuccessListener { barcodes ->
                                         for (barcode in barcodes) {
 
-                                            // ✅ THIS IS THE MOST IMPORTANT PART
+                                            //  THIS IS THE MOST IMPORTANT PART
                                             barcode.rawValue?.let { uid ->
 
                                                 scannedValue = uid
 
-                                                // 🔥 FETCH USER FROM FIREBASE
+                                                //  FETCH USER FROM FIREBASE
                                                 firestore.collection("users")
                                                     .document(uid)
                                                     .get()
@@ -154,7 +154,7 @@ fun QrScannerScreen(navController: NavController) {
     }
 }
 
-// 🔥 MONEY TRANSFER FUNCTION (BOTTOM OF FILE)
+//  MONEY TRANSFER FUNCTION (BOTTOM OF FILE)
 fun sendMoney(receiverUid: String, amount: String) {
     val senderUid = FirebaseAuth.getInstance().currentUser?.uid ?: return
     val firestore = FirebaseFirestore.getInstance()

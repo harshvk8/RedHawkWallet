@@ -7,4 +7,5 @@ object Routes {
     const val REGISTER = "register"
     const val EMAIL_VERIFICATION = "email_verification"
     const val QR_ID = "qr_id"
+    const val QR_SCANNER = "qr_scanner"
 }

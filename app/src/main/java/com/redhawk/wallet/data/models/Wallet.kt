@@ -1,5 +1,5 @@
 package com.redhawk.wallet.data.models
-data class Wallet(
+
 
 data class Wallet(
     val uid: String = "",

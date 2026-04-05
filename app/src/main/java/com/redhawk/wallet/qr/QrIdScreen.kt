@@ -21,6 +21,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.google.firebase.auth.FirebaseAuth
+import com.redhawk.wallet.ui.navigation.Routes
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -251,9 +252,7 @@ fun QrIdScreen(
                         unfocusedTextColor = Text
                     ),
                     shape = RoundedCornerShape(14.dp),
-                    modifier = Modifier
-                        .menuAnchor()
-                        .fillMaxWidth()
+                    modifier = Modifier.menuAnchor().fillMaxWidth()
                 )
 
                 ExposedDropdownMenu(
@@ -300,6 +299,14 @@ fun QrIdScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("Logout", fontWeight = FontWeight.Bold)
+                }
+                Button(
+                    onClick = {
+                        navController.navigate(Routes.QR_SCANNER)
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Scan QR Code")
                 }
             }
         }

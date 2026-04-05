@@ -1,6 +1,7 @@
 package com.redhawk.wallet.feature_auth
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import com.redhawk.wallet.data.datasource.FirestoreDataSource
@@ -11,12 +12,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-class AuthViewModel(
-    private val repository: AuthRepository = AuthRepository(),
-    private val manager: AuthManager = AuthManager(),
-    private val userRepository: UserRepository = UserRepository(FirestoreDataSource()),
-    private val walletRepository: WalletRepository = WalletRepository(FirestoreDataSource())
-) : ViewModel() {
+class AuthViewModel(application: Application) : AndroidViewModel(application) {
+
+    private val authManager = AuthManager()
+    private val sessionManager = SessionManager(application)
+    private val repository = AuthRepository(authManager, sessionManager)
+    private val userRepository = UserRepository(FirestoreDataSource())
+    private val walletRepository = WalletRepository(FirestoreDataSource())
 
     private val _authState = MutableStateFlow<AuthResult?>(null)
     val authState: StateFlow<AuthResult?> = _authState
@@ -32,71 +34,95 @@ class AuthViewModel(
 
     fun register(name: String, studentId: String, email: String, password: String) {
         _authState.value = AuthResult.Loading
+
         viewModelScope.launch {
-            val result = repository.registerIfAllowed(
-                name = name,
-                studentId = studentId,
-                email = email,
-                password = password
-            )
+            try {
+                val result = repository.register(email, password)
 
-            if (result is AuthResult.Success) {
-                val user = FirebaseAuth.getInstance().currentUser
-                val uid = user?.uid.orEmpty()
+                result.fold(
+                    onSuccess = {
+                        val user = FirebaseAuth.getInstance().currentUser
+                        val uid = user?.uid.orEmpty()
 
-                if (uid.isNotBlank()) {
-                    val profile = UserProfile(
-                        uid = uid,
-                        name = name,
-                        studentId = studentId,
-                        email = email,
-                        photoUrl = ""
-                    )
-                    try {
-                        userRepository.createUserProfile(profile)
-                        walletRepository.initWallet(uid)
-                        try {
-                            user?.sendEmailVerification()
-                            _message.value = "Verification email sent to $email"
-                        } catch (e: Exception) {
-                            _message.value = e.message ?: "Failed to send verification email"
+                        if (uid.isBlank()) {
+                            _authState.value = AuthResult.Error("Registration succeeded but UID is missing")
+                            return@launch
                         }
-                    } catch (e: Exception) {
-                        _authState.value = AuthResult.Error(
-                            e.message ?: "Failed to save user profile / wallet"
+
+                        val profile = UserProfile(
+                            uid = uid,
+                            name = name,
+                            studentId = studentId,
+                            email = email,
+                            photoUrl = ""
                         )
-                        return@launch
+
+                        try {
+                            userRepository.createUserProfile(profile)
+                            walletRepository.initWallet(uid)
+
+                            try {
+                                user?.sendEmailVerification()
+                                _message.value = "Verification email sent to $email"
+                            } catch (e: Exception) {
+                                _message.value = e.message ?: "Failed to send verification email"
+                            }
+
+                            _authState.value = AuthResult.Success(uid)
+                        } catch (e: Exception) {
+                            _authState.value = AuthResult.Error(
+                                e.message ?: "Failed to save user profile / wallet"
+                            )
+                        }
+                    },
+                    onFailure = { e ->
+                        _authState.value = AuthResult.Error(
+                            e.message ?: "Registration failed"
+                        )
                     }
-                } else {
-                    _authState.value = AuthResult.Error("Registration succeeded but UID is missing")
-                    return@launch
-                }
+                )
+            } catch (e: Exception) {
+                _authState.value = AuthResult.Error(e.message ?: "Registration failed")
             }
-            _authState.value = result
         }
     }
 
     fun login(email: String, password: String) {
         _authState.value = AuthResult.Loading
+
         viewModelScope.launch {
-            val result = repository.login(email, password)
+            try {
+                val result = repository.login(email, password)
 
-            if (result is AuthResult.Success) {
-                val user = FirebaseAuth.getInstance().currentUser
-                val uid = user?.uid.orEmpty()
+                result.fold(
+                    onSuccess = { uid ->
+                        val user = FirebaseAuth.getInstance().currentUser
+                        val currentUid = user?.uid ?: uid
 
-                if (uid.isNotBlank()) {
-                    val w = walletRepository.getWallet(uid)
-                    if (w == null) walletRepository.initWallet(uid)
-                }
+                        if (currentUid.isNotBlank()) {
+                            val wallet = walletRepository.getWallet(currentUid)
+                            if (wallet == null) {
+                                walletRepository.initWallet(currentUid)
+                            }
+                        }
 
-                _isEmailVerified.value = user?.isEmailVerified == true
+                        _isEmailVerified.value = user?.isEmailVerified == true
 
-                if (user?.isEmailVerified == false) {
-                    _message.value = "Please verify your email before continuing."
-                }
+                        if (user?.isEmailVerified == false) {
+                            _message.value = "Please verify your email before continuing."
+                        }
+
+                        _authState.value = AuthResult.Success(currentUid)
+                    },
+                    onFailure = { e ->
+                        _authState.value = AuthResult.Error(
+                            e.message ?: "Login failed"
+                        )
+                    }
+                )
+            } catch (e: Exception) {
+                _authState.value = AuthResult.Error(e.message ?: "Login failed")
             }
-            _authState.value = result
         }
     }
 
@@ -121,15 +147,17 @@ class AuthViewModel(
             try {
                 _isLoading.value = true
                 val user = FirebaseAuth.getInstance().currentUser
+
                 if (user != null) {
                     user.reload()
                     val refreshedUser = FirebaseAuth.getInstance().currentUser
                     val verified = refreshedUser?.isEmailVerified == true
                     _isEmailVerified.value = verified
-                    if (verified) {
-                        _message.value = "Email verified successfully."
+
+                    _message.value = if (verified) {
+                        "Email verified successfully."
                     } else {
-                        _message.value = "Email is still not verified yet."
+                        "Email is still not verified yet."
                     }
                 } else {
                     _message.value = "No logged-in user found."
@@ -143,7 +171,7 @@ class AuthViewModel(
     }
 
     fun logout() {
-        manager.signOut()
+        authManager.signOut()
         _authState.value = null
         _isEmailVerified.value = false
         _isLoading.value = false
@@ -159,7 +187,7 @@ class AuthViewModel(
     }
 
     fun checkCurrentUser(): Boolean {
-        return manager.getCurrentUser() != null
+        return authManager.getCurrentUser() != null
     }
 
     fun clearState() {

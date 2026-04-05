@@ -24,10 +24,11 @@ class TapToPayViewModel(
     private val _state = MutableStateFlow(TapUiState())
     val state: StateFlow<TapUiState> = _state
 
-    private fun uid(): String =
-        FirebaseAuth.getInstance().currentUser?.uid ?: ""
+    private fun uid(): String {
+        return FirebaseAuth.getInstance().currentUser?.uid ?: ""
+    }
 
-    private fun checkEmailVerified(): Boolean {
+    private suspend fun checkEmailVerified(): Boolean {
         val user = FirebaseAuth.getInstance().currentUser
         user?.reload()
         return user?.isEmailVerified ?: false
@@ -41,23 +42,25 @@ class TapToPayViewModel(
             try {
                 val emailVerified = checkEmailVerified()
 
-                var w = walletRepo.getWallet(u)
-                if (w == null) {
+                var wallet = walletRepo.getWallet(u)
+                if (wallet == null) {
                     walletRepo.initWallet(u)
-                    w = walletRepo.getWallet(u)
+                    wallet = walletRepo.getWallet(u)
                 }
 
                 val txs = walletRepo.getLatestTransactions(u)
 
                 _state.value = _state.value.copy(
-                    balanceText = "Balance: $${w?.balance ?: 0.0}",
+                    balanceText = "Balance: $${wallet?.balance ?: 0.0}",
                     transactionsText = txs.joinToString("\n") {
                         "• -$${it.amount} | ${it.status} | ${it.token.take(8)}..."
                     },
                     isEmailVerified = emailVerified,
-                    error = if (!emailVerified)
+                    error = if (!emailVerified) {
                         "⚠️ Please verify your email to use payments."
-                    else null
+                    } else {
+                        null
+                    }
                 )
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
@@ -71,19 +74,24 @@ class TapToPayViewModel(
         val u = uid()
         if (u.isBlank()) return
 
-        if (!checkEmailVerified()) {
-            _state.value = _state.value.copy(
-                error = "⚠️ Please verify your email before making payments."
-            )
-            return
-        }
-
         viewModelScope.launch {
             try {
-                _state.value = _state.value.copy(loading = true, error = null)
+                val emailVerified = checkEmailVerified()
 
-                val w = walletRepo.getWallet(u)
-                if (w == null) {
+                if (!emailVerified) {
+                    _state.value = _state.value.copy(
+                        error = "⚠️ Please verify your email before making payments."
+                    )
+                    return@launch
+                }
+
+                _state.value = _state.value.copy(
+                    loading = true,
+                    error = null
+                )
+
+                val wallet = walletRepo.getWallet(u)
+                if (wallet == null) {
                     walletRepo.initWallet(u)
                 }
 

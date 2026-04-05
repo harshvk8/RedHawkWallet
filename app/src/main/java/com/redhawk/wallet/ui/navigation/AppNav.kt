@@ -8,6 +8,7 @@ import androidx.navigation.compose.composable
 import com.redhawk.wallet.data.datasource.FirestoreDataSource
 import com.redhawk.wallet.data.repository.WalletRepository
 import com.redhawk.wallet.feature_auth.AuthViewModel
+import com.redhawk.wallet.qr.QrIdScreen
 import com.redhawk.wallet.ui.screens.DashboardScreen
 import com.redhawk.wallet.ui.screens.EmailVerificationPendingScreen
 import com.redhawk.wallet.ui.screens.LoginScreen
@@ -42,6 +43,10 @@ fun AppNav(
             )
         }
 
+        composable(Routes.QR_ID) {
+            QrIdScreen(navController = navController)
+        }
+
         composable(Routes.LOGIN) {
             LoginScreen(
                 onLoginSuccess = {
@@ -55,7 +60,6 @@ fun AppNav(
             )
         }
 
-        // ✅ Using the exact parameter names from RegisterScreen.kt
         composable(Routes.REGISTER) {
             RegisterScreen(
                 onRegisterClick = { _, _, _, _ -> },
@@ -79,7 +83,6 @@ fun AppNav(
             )
         }
 
-        // ✅ Using the exact parameter names from EmailVerificationPendingScreen.kt
         composable(Routes.EMAIL_VERIFICATION) {
             EmailVerificationPendingScreen(
                 authViewModel = authViewModel,
@@ -90,7 +93,7 @@ fun AppNav(
                 },
                 onBackToLogin = {
                     navController.navigate(Routes.LOGIN) {
-                        popUpTo(Routes.EMAIL_VERIFICATION) { inclusive = true }
+                        popUpTo(0) { inclusive = true }
                     }
                 }
             )

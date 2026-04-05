@@ -9,6 +9,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 import com.google.firebase.storage.FirebaseStorage
 
 data class QrUserProfile(
@@ -33,52 +34,36 @@ class QrViewModel : ViewModel() {
         private set
 
     fun loadStudentProfile() {
-        val uid = auth.currentUser?.uid
-        if (uid.isNullOrBlank()) {
-            userProfile = QrUserProfile(
-                uid = "NO-USER",
-                name = "Not logged in",
-                studentId = "—"
-            )
-            qrBitmap = null
-            return
-        }
+        val currentUser = auth.currentUser
+        val uid = currentUser?.uid ?: return
 
-        db.collection("users").document(uid).get()
+        db.collection("users")
+            .document(uid)
+            .get()
             .addOnSuccessListener { doc ->
-                Log.d("QR", "doc exists = ${doc.exists()}")
-                Log.d("QR", "doc data = ${doc.data}")
-
-                if (!doc.exists()) {
-                    userProfile = QrUserProfile(
+                userProfile = if (doc.exists()) {
+                    QrUserProfile(
                         uid = uid,
-                        name = "NO FIRESTORE DOC",
-                        studentId = "Create profile"
+                        name = doc.getString("name").orEmpty(),
+                        studentId = doc.getString("studentId").orEmpty(),
+                        email = doc.getString("email").orEmpty(),
+                        photoUrl = doc.getString("photoUrl").orEmpty(),
+                        createdAt = doc.getLong("createdAt") ?: System.currentTimeMillis()
                     )
-                    qrBitmap = null
-                    return@addOnSuccessListener
+                } else {
+                    QrUserProfile(
+                        uid = uid,
+                        name = currentUser.displayName ?: "Unknown User",
+                        studentId = "",
+                        email = currentUser.email.orEmpty(),
+                        photoUrl = ""
+                    )
                 }
 
-                userProfile = QrUserProfile(
-                    uid = uid,
-                    name = doc.getString("name").orEmpty(),
-                    studentId = doc.getString("studentId").orEmpty(),
-                    email = doc.getString("email").orEmpty(),
-                    photoUrl = doc.getString("photoUrl").orEmpty(),
-                    createdAt = doc.getLong("createdAt") ?: System.currentTimeMillis()
-                )
-
                 qrBitmap = null
-                Log.d("QR", "Loaded profile OK: $userProfile")
             }
             .addOnFailureListener { e ->
-                Log.e("QR", "loadStudentProfile FAILED", e)
-                userProfile = QrUserProfile(
-                    uid = uid,
-                    name = "Profile load failed",
-                    studentId = "—"
-                )
-                qrBitmap = null
+                Log.e("QR", "loadStudentProfile failed", e)
             }
     }
 
@@ -91,29 +76,33 @@ class QrViewModel : ViewModel() {
                 ref.downloadUrl.addOnSuccessListener { downloadUri ->
                     val url = downloadUri.toString()
 
-                    db.collection("users").document(uid)
-                        .update("photoUrl", url)
+                    db.collection("users")
+                        .document(uid)
+                        .set(mapOf("photoUrl" to url), SetOptions.merge())
                         .addOnSuccessListener {
                             userProfile = userProfile.copy(photoUrl = url)
-                            Log.d("QR", "Photo saved + state updated: $url")
                         }
                         .addOnFailureListener { e ->
-                            Log.e("QR", "Failed to update Firestore photoUrl", e)
+                            Log.e("QR", "save photoUrl failed", e)
                         }
                 }
             }
             .addOnFailureListener { e ->
-                Log.e("QR", "uploadProfilePhoto FAILED", e)
+                Log.e("QR", "uploadProfilePhoto failed", e)
             }
     }
 
-    // ✅ UPDATED FUNCTION (ONLY PART CHANGED)
     fun generateQrIfNeeded() {
         if (qrBitmap != null) return
-        if (userProfile.uid.isBlank()) return   // ✅ added safety
+        val payload = userProfile.uid
+        if (payload.isBlank()) return
 
-        val payload = userProfile.uid   // ✅ THIS IS THE FIX
-        qrBitmap = QrCodeGenerator.generateQrBitmap(payload)
+        try {
+            qrBitmap = QrCodeGenerator.generateQrBitmap(payload)
+        } catch (e: Exception) {
+            Log.e("QR", "generateQrIfNeeded failed", e)
+            qrBitmap = null
+        }
     }
 
     fun forceRefreshQr() {

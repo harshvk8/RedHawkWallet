@@ -57,6 +57,7 @@ fun NfcResultScreen(
             AnimatedVisibility(
                 visible = showSuccess,
                 enter = fadeIn(),
+
                 exit = fadeOut()
             ) {
                 Column(

@@ -34,11 +34,15 @@ kotlin {
     }
 }
 dependencies {
+    implementation(platform("com.google.firebase:firebase-bom:34.11.0"))
 
-    // Firebase (NO BOM)
-    implementation("com.google.firebase:firebase-auth-ktx:23.1.0")
-    implementation("com.google.firebase:firebase-firestore-ktx:25.1.1")
-    implementation("com.google.firebase:firebase-storage-ktx:21.0.1")
+    // Firebase main modules
+    implementation("com.google.firebase:firebase-auth")
+    implementation("com.google.firebase:firebase-firestore")
+    implementation("com.google.firebase:firebase-storage")
+
+    // App Check
+    debugImplementation("com.google.firebase:firebase-appcheck-debug")
 
     // Core Android
     implementation(libs.androidx.core.ktx)
@@ -62,12 +66,12 @@ dependencies {
     // QR
     implementation("com.google.zxing:core:3.5.3")
 
-    //QR Screen
+    // Camera / scanner
     implementation("androidx.camera:camera-camera2:1.3.1")
     implementation("androidx.camera:camera-lifecycle:1.3.1")
     implementation("androidx.camera:camera-view:1.3.1")
-
     implementation("com.google.mlkit:barcode-scanning:17.2.0")
+    implementation("com.google.guava:guava:32.1.3-android")
 
     // Security
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
