@@ -63,10 +63,12 @@ fun QrIdScreen(
     val firebaseUser = auth.currentUser
     val context = LocalContext.current
 
+
     var showQr by remember { mutableStateOf(false) }
 
     val student = vm.userProfile
     val qrBmp = vm.qrBitmap
+    val verificationUi = vm.verificationUi
 
     val displayName = student.name.ifBlank { firebaseUser?.displayName ?: "Unknown User" }
     val displayStudentId = student.studentId.ifBlank { "—" }
@@ -237,6 +239,82 @@ fun QrIdScreen(
                     text = if (showQr) "QR Code Shown" else "Show Account QR Code",
                     fontWeight = FontWeight.Bold
                 )
+            }
+
+            OutlinedButton(
+                onClick = {
+                    navController.navigate(Routes.QR_SCANNER)
+                },
+                shape = RoundedCornerShape(14.dp),
+                border = BorderStroke(1.dp, redDark),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = redDark),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Scan & Verify", fontWeight = FontWeight.Bold)
+            }
+
+            verificationUi?.let { result ->
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    border = BorderStroke(
+                        1.dp,
+                        if (result.isValid) Color(0xFF2E7D32) else MaterialTheme.colorScheme.error
+                    ),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = result.title,
+                            fontWeight = FontWeight.Bold,
+                            color = if (result.isValid) Color(0xFF2E7D32) else MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.titleMedium
+                        )
+
+                        if (result.name.isNotBlank()) {
+                            Text(
+                                text = "Name: ${result.name}",
+                                color = textColor
+                            )
+                        }
+
+                        if (result.role.isNotBlank()) {
+                            Text(
+                                text = "Role: ${result.role}",
+                                color = textColor
+                            )
+                        }
+
+                        if (result.idLabel.isNotBlank()) {
+                            Text(
+                                text = "${result.idLabel}: ${result.idValue}",
+                                color = textColor
+                            )
+                        }
+
+                        if (result.email.isNotBlank()) {
+                            Text(
+                                text = "Email: ${result.email}",
+                                color = textColor
+                            )
+                        }
+
+                        Text(
+                            text = result.message,
+                            color = muted
+                        )
+
+                        OutlinedButton(
+                            onClick = { vm.clearVerification() },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Clear Verification")
+                        }
+                    }
+                }
             }
 
             if (showQr) {

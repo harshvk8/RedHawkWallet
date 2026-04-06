@@ -15,6 +15,17 @@ import com.redhawk.wallet.data.models.UserProfile
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
+data class VerificationUi(
+    val isValid: Boolean,
+    val title: String,
+    val name: String,
+    val role: String,
+    val idLabel: String,
+    val idValue: String,
+    val email: String,
+    val message: String
+)
+
 class QrViewModel : ViewModel() {
 
     private val auth = FirebaseAuth.getInstance()
@@ -28,6 +39,9 @@ class QrViewModel : ViewModel() {
         private set
 
     var errorMessage by mutableStateOf<String?>(null)
+        private set
+
+    var verificationUi by mutableStateOf<VerificationUi?>(null)
         private set
 
     fun loadStudentProfile() {
@@ -108,7 +122,6 @@ class QrViewModel : ViewModel() {
                 errorMessage = null
 
                 val photoRef = storage.reference.child("profile_photos/$uid.jpg")
-
                 photoRef.putFile(uri).await()
                 val downloadUrl = photoRef.downloadUrl.await().toString()
 
@@ -151,5 +164,149 @@ class QrViewModel : ViewModel() {
     fun forceRefreshQr() {
         qrBitmap = null
         generateQrIfNeeded()
+    }
+
+    fun verifyScannedQr(rawValue: String) {
+        if (rawValue.isBlank()) {
+            verificationUi = VerificationUi(
+                isValid = false,
+                title = "Invalid QR",
+                name = "",
+                role = "",
+                idLabel = "",
+                idValue = "",
+                email = "",
+                message = "Scanned QR is empty."
+            )
+            return
+        }
+
+        val parts = rawValue.split("|")
+        if (parts.size < 3 || parts[0] != "MSU") {
+            verificationUi = VerificationUi(
+                isValid = false,
+                title = "Invalid QR",
+                name = "",
+                role = "",
+                idLabel = "",
+                idValue = "",
+                email = "",
+                message = "This is not a valid Montclair QR code."
+            )
+            return
+        }
+
+        val uid = parts[1]
+        val qrId = parts[2]
+
+        viewModelScope.launch {
+            try {
+                val doc = db.collection("users")
+                    .document(uid)
+                    .get()
+                    .await()
+
+                if (!doc.exists()) {
+                    verificationUi = VerificationUi(
+                        isValid = false,
+                        title = "User Not Found",
+                        name = "",
+                        role = "",
+                        idLabel = "",
+                        idValue = "",
+                        email = "",
+                        message = "No user record found for this QR."
+                    )
+                    return@launch
+                }
+
+                val name = doc.getString("name") ?: "Unknown User"
+                val email = doc.getString("email") ?: ""
+                val role = (doc.getString("role") ?: "student").lowercase()
+                val studentId = doc.getString("studentId") ?: ""
+                val professorId = doc.getString("professorId") ?: ""
+                val isEmailVerified = doc.getBoolean("isEmailVerified") ?: false
+
+                if (!isEmailVerified) {
+                    verificationUi = VerificationUi(
+                        isValid = false,
+                        title = "Not Verified",
+                        name = name,
+                        role = role,
+                        idLabel = if (role == "professor") "Professor ID" else "Student ID",
+                        idValue = if (role == "professor") professorId.ifBlank { studentId } else studentId,
+                        email = email,
+                        message = "User exists, but email is not verified."
+                    )
+                    return@launch
+                }
+
+                if (role == "professor") {
+                    val expectedId = professorId.ifBlank { studentId }
+                    val valid = expectedId.isNotBlank() && expectedId == qrId
+
+                    verificationUi = VerificationUi(
+                        isValid = valid,
+                        title = if (valid) "Verified Professor" else "Professor Verification Failed",
+                        name = name,
+                        role = "Professor",
+                        idLabel = "Professor ID",
+                        idValue = expectedId,
+                        email = email,
+                        message = if (valid) {
+                            "QR belongs to a registered professor."
+                        } else {
+                            "Professor ID does not match the QR."
+                        }
+                    )
+                } else {
+                    val valid = studentId.isNotBlank() && studentId == qrId
+
+                    verificationUi = VerificationUi(
+                        isValid = valid,
+                        title = if (valid) "Verified Student" else "Student Verification Failed",
+                        name = name,
+                        role = "Student",
+                        idLabel = "Student ID",
+                        idValue = studentId,
+                        email = email,
+                        message = if (valid) {
+                            "QR belongs to a registered student."
+                        } else {
+                            "Student ID does not match the QR."
+                        }
+                    )
+                }
+            } catch (e: Exception) {
+                Log.e("QrViewModel", "Verification failed", e)
+                verificationUi = VerificationUi(
+                    isValid = false,
+                    title = "Verification Error",
+                    name = "",
+                    role = "",
+                    idLabel = "",
+                    idValue = "",
+                    email = "",
+                    message = e.message ?: "Unable to verify QR."
+                )
+            }
+        }
+    }
+
+    fun clearVerification() {
+        verificationUi = null
+    }
+
+    fun showScannerError(message: String) {
+        verificationUi = VerificationUi(
+            isValid = false,
+            title = "Scanner Error",
+            name = "",
+            role = "",
+            idLabel = "",
+            idValue = "",
+            email = "",
+            message = message
+        )
     }
 }
