@@ -11,6 +11,7 @@ import com.redhawk.wallet.data.repository.WalletRepository
 import com.redhawk.wallet.feature_auth.AuthViewModel
 import com.redhawk.wallet.qr.QrIdScreen
 import com.redhawk.wallet.qr.QrScannerScreen
+import com.redhawk.wallet.qr.QrViewModel
 import com.redhawk.wallet.ui.screens.DashboardScreen
 import com.redhawk.wallet.ui.screens.EmailVerificationPendingScreen
 import com.redhawk.wallet.ui.screens.LoginScreen
