@@ -12,6 +12,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -23,9 +24,11 @@ import kotlinx.coroutines.delay
 fun SplashScreen(
     onNavigateNext: () -> Unit
 ) {
+    val latestNavigate = rememberUpdatedState(onNavigateNext)
+
     LaunchedEffect(Unit) {
-        delay(2000)
-        onNavigateNext()
+        delay(1500)
+        latestNavigate.value.invoke()
     }
 
     Column(

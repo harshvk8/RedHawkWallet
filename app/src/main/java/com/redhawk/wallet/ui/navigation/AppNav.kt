@@ -5,6 +5,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.google.firebase.auth.FirebaseAuth
 import com.redhawk.wallet.data.datasource.FirestoreDataSource
 import com.redhawk.wallet.data.repository.WalletRepository
 import com.redhawk.wallet.feature_auth.AuthViewModel
@@ -30,16 +31,28 @@ fun AppNav(
         composable(Routes.SPLASH) {
             SplashScreen(
                 onNavigateNext = {
-                    val isLoggedIn = authViewModel.checkCurrentUser()
-                    if (isLoggedIn) {
-                        navController.navigate(Routes.DASHBOARD) {
-                            popUpTo(Routes.SPLASH) { inclusive = true }
-                            launchSingleTop = true
+                    val currentUser = FirebaseAuth.getInstance().currentUser
+
+                    when {
+                        currentUser == null -> {
+                            navController.navigate(Routes.LOGIN) {
+                                popUpTo(Routes.SPLASH) { inclusive = true }
+                                launchSingleTop = true
+                            }
                         }
-                    } else {
-                        navController.navigate(Routes.LOGIN) {
-                            popUpTo(Routes.SPLASH) { inclusive = true }
-                            launchSingleTop = true
+
+                        currentUser.isEmailVerified -> {
+                            navController.navigate(Routes.DASHBOARD) {
+                                popUpTo(Routes.SPLASH) { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        }
+
+                        else -> {
+                            navController.navigate(Routes.EMAIL_VERIFICATION) {
+                                popUpTo(Routes.SPLASH) { inclusive = true }
+                                launchSingleTop = true
+                            }
                         }
                     }
                 }
@@ -49,9 +62,18 @@ fun AppNav(
         composable(Routes.LOGIN) {
             LoginScreen(
                 onLoginSuccess = {
-                    navController.navigate(Routes.DASHBOARD) {
-                        popUpTo(Routes.LOGIN) { inclusive = true }
-                        launchSingleTop = true
+                    val currentUser = FirebaseAuth.getInstance().currentUser
+
+                    if (currentUser != null && currentUser.isEmailVerified) {
+                        navController.navigate(Routes.DASHBOARD) {
+                            popUpTo(Routes.LOGIN) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    } else {
+                        navController.navigate(Routes.EMAIL_VERIFICATION) {
+                            popUpTo(Routes.LOGIN) { inclusive = true }
+                            launchSingleTop = true
+                        }
                     }
                 },
                 onSignUpClick = {
