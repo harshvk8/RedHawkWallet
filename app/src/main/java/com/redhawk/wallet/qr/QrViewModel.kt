@@ -9,6 +9,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 import com.google.firebase.storage.FirebaseStorage
 
 data class QrUserProfile(
@@ -34,26 +35,29 @@ class QrViewModel : ViewModel() {
 
     fun loadStudentProfile() {
         val uid = auth.currentUser?.uid
+
         if (uid.isNullOrBlank()) {
             userProfile = QrUserProfile(
-                uid = "NO-USER",
+                uid = "",
                 name = "Not logged in",
-                studentId = "—"
+                studentId = ""
             )
             qrBitmap = null
             return
         }
 
-        db.collection("users").document(uid).get()
+        db.collection("users")
+            .document(uid)
+            .get()
             .addOnSuccessListener { doc ->
-                Log.d("QR", "doc exists = ${doc.exists()}")
-                Log.d("QR", "doc data = ${doc.data}")
-
                 if (!doc.exists()) {
                     userProfile = QrUserProfile(
                         uid = uid,
-                        name = "NO FIRESTORE DOC",
-                        studentId = "Create profile"
+                        name = auth.currentUser?.displayName ?: "",
+                        studentId = "",
+                        email = auth.currentUser?.email ?: "",
+                        photoUrl = "",
+                        createdAt = System.currentTimeMillis()
                     )
                     qrBitmap = null
                     return@addOnSuccessListener
@@ -69,14 +73,16 @@ class QrViewModel : ViewModel() {
                 )
 
                 qrBitmap = null
-                Log.d("QR", "Loaded profile OK: $userProfile")
             }
             .addOnFailureListener { e ->
-                Log.e("QR", "loadStudentProfile FAILED", e)
+                Log.e("QR", "loadStudentProfile failed", e)
                 userProfile = QrUserProfile(
                     uid = uid,
-                    name = "Profile load failed",
-                    studentId = "—"
+                    name = auth.currentUser?.displayName ?: "Profile load failed",
+                    studentId = "",
+                    email = auth.currentUser?.email ?: "",
+                    photoUrl = "",
+                    createdAt = System.currentTimeMillis()
                 )
                 qrBitmap = null
             }
@@ -91,27 +97,42 @@ class QrViewModel : ViewModel() {
                 ref.downloadUrl.addOnSuccessListener { downloadUri ->
                     val url = downloadUri.toString()
 
-                    db.collection("users").document(uid)
-                        .update("photoUrl", url)
+                    db.collection("users")
+                        .document(uid)
+                        .set(mapOf("photoUrl" to url), SetOptions.merge())
                         .addOnSuccessListener {
                             userProfile = userProfile.copy(photoUrl = url)
-                            Log.d("QR", "Photo saved + state updated: $url")
                         }
                         .addOnFailureListener { e ->
-                            Log.e("QR", "Failed to update Firestore photoUrl", e)
+                            Log.e("QR", "photoUrl update failed", e)
                         }
+                }.addOnFailureListener { e ->
+                    Log.e("QR", "download URL failed", e)
                 }
             }
             .addOnFailureListener { e ->
-                Log.e("QR", "uploadProfilePhoto FAILED", e)
+                Log.e("QR", "uploadProfilePhoto failed", e)
             }
     }
 
     fun generateQrIfNeeded() {
         if (qrBitmap != null) return
 
-        val payload = "MSU|${userProfile.uid}|${userProfile.studentId}"
-        qrBitmap = QrCodeGenerator.generateQrBitmap(payload)
+        val uid = userProfile.uid.ifBlank { auth.currentUser?.uid.orEmpty() }
+        val studentId = userProfile.studentId.ifBlank { "NO-STUDENT-ID" }
+
+        if (uid.isBlank()) {
+            qrBitmap = null
+            return
+        }
+
+        try {
+            val payload = "MSU|$uid|$studentId"
+            qrBitmap = QrCodeGenerator.generateQrBitmap(payload)
+        } catch (e: Exception) {
+            Log.e("QR", "QR generation failed", e)
+            qrBitmap = null
+        }
     }
 
     fun forceRefreshQr() {

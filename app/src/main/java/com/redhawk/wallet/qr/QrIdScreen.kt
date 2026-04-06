@@ -5,16 +5,45 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.runtime.*
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -27,42 +56,15 @@ import com.redhawk.wallet.ui.navigation.Routes
 @Composable
 fun QrIdScreen(
     navController: NavController,
-    modifier: Modifier = Modifier,
     vm: QrViewModel = viewModel()
 ) {
-    val context = LocalContext.current
     val auth = remember { FirebaseAuth.getInstance() }
     val firebaseUser = auth.currentUser
-
-    var showQr by remember { mutableStateOf(false) }
-
     val student = vm.userProfile
     val qrBmp = vm.qrBitmap
 
-    // ✅ Image picker MUST be inside composable
-    val pickImage = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri ->
-        if (uri != null) {
-            vm.uploadProfilePhoto(uri)
-            Toast.makeText(context, "Uploading photo...", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        vm.loadStudentProfile()
-    }
-
-    // ✅ FALLBACKS so text never shows blank
-    val displayName = student.name.ifBlank { firebaseUser?.displayName ?: "Unknown User" }
-    val displayEmail = student.email.ifBlank { firebaseUser?.email ?: "" }
-    val displayUid = student.uid.ifBlank { firebaseUser?.uid ?: "" }
-
-    val Red = Color(0xFFC8102E)
-    val RedDark = Color(0xFF9E0B22)
-    val Border = Color(0xFFE6E6E6)
-    val Text = Color(0xFF1F1F1F)
-    val Muted = Color(0xFF666666)
+    var showQr by remember { mutableStateOf(false) }
+    var accountMenuExpanded by remember { mutableStateOf(false) }
 
     val accounts = listOf(
         "Red Hawk Dollars Debit",
@@ -70,31 +72,72 @@ fun QrIdScreen(
         "Red Hawk Dollars Bonus",
         "Meal Swipes (Entries)"
     )
-
-    var expanded by remember { mutableStateOf(false) }
     var selectedAccount by remember { mutableStateOf(accounts.first()) }
+
+    val red = Color(0xFFC8102E)
+    val redDark = Color(0xFF9E0B22)
+    val border = Color(0xFFE6E6E6)
+    val textColor = Color(0xFF1F1F1F)
+    val muted = Color(0xFF666666)
+
+    val pickImage = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        if (uri != null) {
+            vm.uploadProfilePhoto(uri)
+            Toast.makeText(
+                navController.context,
+                "Uploading photo...",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        vm.loadStudentProfile()
+    }
+
+    val displayName = student.name.ifBlank { firebaseUser?.displayName ?: "Unknown User" }
+    val displayStudentId = student.studentId.ifBlank { "—" }
+    val displayEmail = student.email.ifBlank { firebaseUser?.email ?: "—" }
+    val displayUid = student.uid.ifBlank { firebaseUser?.uid ?: "" }
 
     Scaffold(
         containerColor = Color.White,
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Account Services", fontWeight = FontWeight.Bold, color = Text) }
+                title = {
+                    Text(
+                        text = "Account Services",
+                        fontWeight = FontWeight.Bold,
+                        color = textColor
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "Back",
+                            tint = textColor
+                        )
+                    }
+                }
             )
         }
     ) { padding ->
+
         Column(
-            modifier = modifier
+            modifier = Modifier
                 .padding(padding)
                 .padding(16.dp)
-                .fillMaxSize(),
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-
-            // --- ID Card ---
             Card(
                 colors = CardDefaults.cardColors(containerColor = Color(0xFFFAFAFA)),
                 shape = RoundedCornerShape(16.dp),
-                border = BorderStroke(1.dp, Border),
+                border = BorderStroke(1.dp, border),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
@@ -102,95 +145,79 @@ fun QrIdScreen(
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Text(
-                        "MONTCLAIR\nSTATE UNIVERSITY",
+                        text = "MONTCLAIR\nSTATE UNIVERSITY",
                         fontWeight = FontWeight.Black,
-                        color = Red,
+                        color = red,
                         style = MaterialTheme.typography.titleMedium
                     )
+
                     Text(
-                        "Montclair Red Hawk Campus Visual",
-                        color = Muted,
+                        text = "Montclair Red Hawk Campus Visual",
+                        color = muted,
                         style = MaterialTheme.typography.bodySmall
                     )
 
-                    Spacer(Modifier.height(6.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.Top,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                    AsyncImage(
+                        model = student.photoUrl.takeIf { it.isNotBlank() },
+                        contentDescription = "Profile Photo",
+                        modifier = Modifier.size(72.dp)
+                    )
+
+                    Text(
+                        text = displayName,
+                        fontWeight = FontWeight.Bold,
+                        color = textColor,
+                        style = MaterialTheme.typography.titleLarge
+                    )
+
+                    Text(
+                        text = displayStudentId,
+                        color = muted,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+
+                    Text(
+                        text = displayEmail,
+                        color = muted,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+
+                    Text(
+                        text = "UID: ${if (displayUid.isNotBlank()) displayUid else "—"}",
+                        color = muted,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+
+                    OutlinedButton(
+                        onClick = { pickImage.launch("image/*") },
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.dp, red),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = red),
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        // ✅ Photo on left
-                        AsyncImage(
-                            model = student.photoUrl.takeIf { it.isNotBlank() },  // ✅ only load if non-empty
-                            contentDescription = "Profile Photo",
-                            modifier = Modifier.size(72.dp)
-                        )
-
-                        Spacer(Modifier.width(12.dp))
-
-                        // ✅ Name + Email + UID (with fallbacks)
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = student.name.ifBlank { "Unknown User" },
-                                fontWeight = FontWeight.Bold,
-                                color = Text,
-                                style = MaterialTheme.typography.titleLarge
-                            )
-                            Text(
-                                text = student.studentId.ifBlank { "—" },   // ✅ show studentId (NOT email)
-                                color = Muted,
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                            Text(
-                                text = "UID: ${student.uid.ifBlank { "—" }}",
-                                color = Muted,
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                        }
-
-                        // ✅ Upload button
-                        OutlinedButton(
-                            onClick = { pickImage.launch("image/*") },
-                            shape = RoundedCornerShape(12.dp),
-                            border = BorderStroke(1.dp, Red),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Red)
-                        ) {
-                            Text("Upload", fontWeight = FontWeight.Bold)
-                        }
+                        Text("Upload Photo", fontWeight = FontWeight.Bold)
                     }
-
-                    Text(
-                        "• Latest photo required at the start of every semester.",
-                        color = Muted,
-                        style = MaterialTheme.typography.bodySmall
-                    )
                 }
             }
 
-            // --- Show QR button ---
             Button(
                 onClick = {
-                    if (!showQr) {
-                        showQr = true
-                        vm.generateQrIfNeeded()
-                    }
+                    showQr = true
+                    vm.generateQrIfNeeded()
                 },
                 shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Red),
+                colors = ButtonDefaults.buttonColors(containerColor = red),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(
-                    if (showQr) "QR Code Shown" else "Show Account QR Code",
-                    fontWeight = FontWeight.Bold
-                )
+                Text("Show Account QR Code", fontWeight = FontWeight.Bold)
             }
 
-            // --- QR section ---
             if (showQr) {
                 Card(
                     shape = RoundedCornerShape(16.dp),
-                    border = BorderStroke(1.dp, Border),
+                    border = BorderStroke(1.dp, border),
                     colors = CardDefaults.cardColors(containerColor = Color.White),
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -199,7 +226,11 @@ fun QrIdScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Text("Scan this QR for verification", fontWeight = FontWeight.Bold, color = Text)
+                        Text(
+                            text = "Scan this QR for verification",
+                            fontWeight = FontWeight.Bold,
+                            color = textColor
+                        )
 
                         Box(
                             modifier = Modifier.size(260.dp),
@@ -219,8 +250,8 @@ fun QrIdScreen(
                         OutlinedButton(
                             onClick = { vm.forceRefreshQr() },
                             shape = RoundedCornerShape(12.dp),
-                            border = BorderStroke(1.dp, RedDark),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = RedDark)
+                            border = BorderStroke(1.dp, redDark),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = redDark)
                         ) {
                             Text("Refresh QR", fontWeight = FontWeight.Bold)
                         }
@@ -229,77 +260,56 @@ fun QrIdScreen(
             }
 
             Text(
-                "Select Account",
-                color = Text,
+                text = "Selected Account",
+                color = textColor,
                 fontWeight = FontWeight.Bold,
                 style = MaterialTheme.typography.titleSmall
             )
 
-            // --- Dropdown ---
-            ExposedDropdownMenuBox(
-                expanded = expanded,
-                onExpandedChange = { expanded = !expanded }
-            ) {
-                OutlinedTextField(
-                    value = selectedAccount,
-                    onValueChange = {},
-                    readOnly = true,
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Red,
-                        unfocusedBorderColor = Border,
-                        focusedTextColor = Text,
-                        unfocusedTextColor = Text
-                    ),
+            Box(modifier = Modifier.fillMaxWidth()) {
+                OutlinedButton(
+                    onClick = { accountMenuExpanded = true },
                     shape = RoundedCornerShape(14.dp),
-                    modifier = Modifier.menuAnchor().fillMaxWidth()
-                )
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(selectedAccount)
+                }
 
-                ExposedDropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false }
+                DropdownMenu(
+                    expanded = accountMenuExpanded,
+                    onDismissRequest = { accountMenuExpanded = false }
                 ) {
                     accounts.forEach { option ->
                         DropdownMenuItem(
                             text = { Text(option) },
                             onClick = {
                                 selectedAccount = option
-                                expanded = false
+                                accountMenuExpanded = false
                             }
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.weight(1f))
+            Button(
+                onClick = {
+                    auth.signOut()
+                    Toast.makeText(
+                        navController.context,
+                        "Logged out",
+                        Toast.LENGTH_SHORT
+                    ).show()
 
-            // --- Bottom: Back or Logout ---
-            if (showQr) {
-                Button(
-                    onClick = { showQr = false },
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = RedDark),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Back", fontWeight = FontWeight.Bold)
-                }
-            } else {
-                Button(
-                    onClick = {
-                        auth.signOut()
-                        Toast.makeText(context, "Logged out", Toast.LENGTH_SHORT).show()
-
-                        navController.navigate(Routes.LOGIN) {
-                            popUpTo(0) { inclusive = true }
-                            launchSingleTop = true
-                        }
-                    },
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = RedDark),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Logout", fontWeight = FontWeight.Bold)
-                }
+                    navController.navigate(Routes.LOGIN) {
+                        popUpTo(Routes.DASHBOARD) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = redDark),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Logout", fontWeight = FontWeight.Bold)
             }
         }
     }
