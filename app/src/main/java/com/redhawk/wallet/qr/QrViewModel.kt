@@ -142,22 +142,43 @@ class QrViewModel : ViewModel() {
         if (qrBitmap != null) return
 
         val uid = userProfile.uid
-        val studentId = userProfile.studentId
+        val fallbackStudentId = userProfile.studentId
 
         if (uid.isBlank()) {
             errorMessage = "Cannot generate QR without a valid user."
             return
         }
 
-        val payload = "MSU|$uid|$studentId"
+        viewModelScope.launch {
+            try {
+                val doc = db.collection("users")
+                    .document(uid)
+                    .get()
+                    .await()
 
-        try {
-            qrBitmap = QrCodeGenerator.generateQrBitmap(payload)
-            errorMessage = null
-        } catch (e: Exception) {
-            Log.e("QrViewModel", "Failed to generate QR", e)
-            qrBitmap = null
-            errorMessage = "QR generation failed."
+                val role = (doc.getString("role") ?: userProfile.role).lowercase()
+                val studentId = doc.getString("studentId") ?: fallbackStudentId
+                val professorId = doc.getString("professorId") ?: ""
+
+                val idForQr = if (role == "professor") {
+                    professorId.ifBlank { studentId }
+                } else {
+                    studentId
+                }
+
+                if (idForQr.isBlank()) {
+                    errorMessage = "Cannot generate QR without an ID."
+                    return@launch
+                }
+
+                val payload = "MSU|$uid|$idForQr"
+                qrBitmap = QrCodeGenerator.generateQrBitmap(payload)
+                errorMessage = null
+            } catch (e: Exception) {
+                Log.e("QrViewModel", "Failed to generate QR", e)
+                qrBitmap = null
+                errorMessage = e.message ?: "QR generation failed."
+            }
         }
     }
 
@@ -242,8 +263,13 @@ class QrViewModel : ViewModel() {
                 }
 
                 if (role == "professor") {
-                    val expectedId = professorId.ifBlank { studentId }
-                    val valid = expectedId.isNotBlank() && expectedId == qrId
+                    val matchedId = when {
+                        professorId.isNotBlank() && qrId == professorId -> professorId
+                        studentId.isNotBlank() && qrId == studentId -> studentId
+                        else -> ""
+                    }
+
+                    val valid = matchedId.isNotBlank()
 
                     verificationUi = VerificationUi(
                         isValid = valid,
@@ -251,12 +277,12 @@ class QrViewModel : ViewModel() {
                         name = name,
                         role = "Professor",
                         idLabel = "Professor ID",
-                        idValue = expectedId,
+                        idValue = professorId.ifBlank { studentId },
                         email = email,
                         message = if (valid) {
                             "QR belongs to a registered professor."
                         } else {
-                            "Professor ID does not match the QR."
+                            "Scanned QR does not match professor records."
                         }
                     )
                 } else {
