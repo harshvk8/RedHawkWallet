@@ -30,7 +30,14 @@ fun DashboardScreen(
             TopAppBar(
                 title = { Text("Home") },
                 actions = {
-                    IconButton(onClick = { navController.navigate(Routes.QR_ID) }) {
+                    IconButton(
+                        onClick = {
+                            println("CLICKED ACCOUNTS")
+                            navController.navigate(Routes.QR_ID) {
+                                launchSingleTop = true
+                            }
+                        }
+                    ) {
                         Icon(
                             imageVector = Icons.Filled.AccountCircle,
                             contentDescription = "Account",
