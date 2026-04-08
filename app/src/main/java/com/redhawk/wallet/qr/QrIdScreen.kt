@@ -71,7 +71,11 @@ fun QrIdScreen(
     val verificationUi = vm.verificationUi
 
     val displayName = student.name.ifBlank { firebaseUser?.displayName ?: "Unknown User" }
-    val displayStudentId = student.studentId.ifBlank { "—" }
+    val displayId = if (student.role.lowercase() == "professor") {
+        student.professorId.ifBlank { student.studentId.ifBlank { "—" } }
+    } else {
+        student.studentId.ifBlank { "—" }
+    }
     val displayEmail = student.email.ifBlank { firebaseUser?.email ?: "—" }
     val displayUid = student.uid.ifBlank { firebaseUser?.uid ?: "—" }
 
@@ -180,7 +184,7 @@ fun QrIdScreen(
                             )
 
                             Text(
-                                text = displayStudentId,
+                                text = displayId,
                                 color = muted,
                                 style = MaterialTheme.typography.bodyMedium
                             )

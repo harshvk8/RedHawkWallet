@@ -8,7 +8,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
 import com.redhawk.wallet.data.models.UserProfile
@@ -44,6 +46,19 @@ class QrViewModel : ViewModel() {
     var verificationUi by mutableStateOf<VerificationUi?>(null)
         private set
 
+    private fun parseCreatedAt(doc: DocumentSnapshot): Long {
+        val value = doc.get("createdAt")
+        return when (value) {
+            is Timestamp -> value.toDate().time
+            is Long -> value
+            is Int -> value.toLong()
+            is Double -> value.toLong()
+            is Float -> value.toLong()
+            is Number -> value.toLong()
+            else -> 0L
+        }
+    }
+
     fun loadStudentProfile() {
         val currentUser = auth.currentUser ?: run {
             userProfile = UserProfile(
@@ -51,6 +66,7 @@ class QrViewModel : ViewModel() {
                 name = "Not logged in",
                 email = "",
                 studentId = "",
+                professorId = "",
                 photoUrl = null,
                 role = "student",
                 isEmailVerified = false,
@@ -69,16 +85,19 @@ class QrViewModel : ViewModel() {
                     .await()
 
                 if (doc.exists()) {
+                    val role = (doc.getString("role") ?: "student").lowercase()
+
                     userProfile = UserProfile(
                         uid = uid,
-                        name = doc.getString("name") ?: "",
-                        email = doc.getString("email") ?: (currentUser.email ?: ""),
+                        name = doc.getString("name") ?: currentUser.displayName.orEmpty(),
+                        email = doc.getString("email") ?: currentUser.email.orEmpty(),
                         studentId = doc.getString("studentId") ?: "",
+                        professorId = doc.getString("professorId") ?: "",
                         photoUrl = doc.getString("photoUrl"),
-                        role = doc.getString("role") ?: "student",
+                        role = role,
                         isEmailVerified = doc.getBoolean("isEmailVerified")
                             ?: currentUser.isEmailVerified,
-                        createdAt = doc.getLong("createdAt") ?: 0L
+                        createdAt = parseCreatedAt(doc)
                     )
                     errorMessage = null
                 } else {
@@ -87,6 +106,7 @@ class QrViewModel : ViewModel() {
                         name = currentUser.displayName ?: "",
                         email = currentUser.email ?: "",
                         studentId = "",
+                        professorId = "",
                         photoUrl = null,
                         role = "student",
                         isEmailVerified = currentUser.isEmailVerified,
@@ -101,6 +121,7 @@ class QrViewModel : ViewModel() {
                     name = currentUser.displayName ?: "",
                     email = currentUser.email ?: "",
                     studentId = "",
+                    professorId = "",
                     photoUrl = null,
                     role = "student",
                     isEmailVerified = currentUser.isEmailVerified,
@@ -142,8 +163,6 @@ class QrViewModel : ViewModel() {
         if (qrBitmap != null) return
 
         val uid = userProfile.uid
-        val fallbackStudentId = userProfile.studentId
-
         if (uid.isBlank()) {
             errorMessage = "Cannot generate QR without a valid user."
             return
@@ -157,8 +176,8 @@ class QrViewModel : ViewModel() {
                     .await()
 
                 val role = (doc.getString("role") ?: userProfile.role).lowercase()
-                val studentId = doc.getString("studentId") ?: fallbackStudentId
-                val professorId = doc.getString("professorId") ?: ""
+                val studentId = doc.getString("studentId") ?: userProfile.studentId
+                val professorId = doc.getString("professorId") ?: userProfile.professorId
 
                 val idForQr = if (role == "professor") {
                     professorId.ifBlank { studentId }
