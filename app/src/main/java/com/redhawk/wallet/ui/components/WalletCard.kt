@@ -7,7 +7,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun WalletCard(balance: String) {
+fun WalletCard(
+    balance: String,
+    accountLabel: String = "Current Balance"
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(6.dp)
@@ -15,7 +18,7 @@ fun WalletCard(balance: String) {
         Column(
             modifier = Modifier.padding(20.dp)
         ) {
-            Text("Current Balance", style = MaterialTheme.typography.labelMedium)
+            Text(accountLabel, style = MaterialTheme.typography.labelMedium)
             Spacer(modifier = Modifier.height(8.dp))
             Text(balance, style = MaterialTheme.typography.headlineMedium)
         }
