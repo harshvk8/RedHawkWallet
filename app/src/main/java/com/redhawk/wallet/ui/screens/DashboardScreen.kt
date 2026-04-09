@@ -29,6 +29,13 @@ import androidx.navigation.NavController
 import com.redhawk.wallet.ui.components.WalletCard
 import com.redhawk.wallet.ui.navigation.Routes
 
+enum class AccountType(val label: String) {
+    RED_HAWK_DOLLARS("Red Hawk Dollars"),
+    FLEX("Flex"),
+    BONUS("Bonus"),
+    MEAL_SWIPES("Meal Swipes")
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
@@ -36,9 +43,17 @@ fun DashboardScreen(
     tapVm: TapToPayViewModel
 ) {
     val st by tapVm.state.collectAsState()
+    var selectedAccount by remember { mutableStateOf(AccountType.RED_HAWK_DOLLARS) }
 
     LaunchedEffect(Unit) {
         tapVm.loadDashboard()
+    }
+
+    val selectedBalance: String = when (selectedAccount) {
+        AccountType.RED_HAWK_DOLLARS -> st.balanceText.replace("Balance:", "").trim()
+        AccountType.FLEX             -> "$0.00"
+        AccountType.BONUS            -> "$0.00"
+        AccountType.MEAL_SWIPES      -> "0 swipes"
     }
 
     Scaffold(
@@ -72,8 +87,25 @@ fun DashboardScreen(
         ) {
             Spacer(modifier = Modifier.height(16.dp))
 
-            val balanceOnly = st.balanceText.replace("Balance:", "").trim()
-            WalletCard(balance = balanceOnly)
+            ScrollableTabRow(
+                selectedTabIndex = AccountType.entries.indexOf(selectedAccount),
+                edgePadding = 0.dp
+            ) {
+                AccountType.entries.forEach { type ->
+                    Tab(
+                        selected = selectedAccount == type,
+                        onClick = { selectedAccount = type },
+                        text = { Text(type.label, style = MaterialTheme.typography.labelMedium) }
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            WalletCard(
+                balance = selectedBalance,
+                accountLabel = selectedAccount.label
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
 
