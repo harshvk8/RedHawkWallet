@@ -2,29 +2,29 @@ package com.redhawk.wallet.feature_auth
 
 import android.content.Context
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
-class AuthViewModel(context: Context) : ViewModel() {
-
-    private val sessionManager = SessionManager(context)
-    private val repository = AuthRepository(AuthManager(), sessionManager)
+class AuthViewModel(
+    private val repository: AuthRepository
+) : ViewModel() {
 
     private val _authState = MutableStateFlow<AuthResult?>(null)
     val authState: StateFlow<AuthResult?> = _authState
 
-    fun signUp(email: String, password: String) {
+    fun signUp(universityId: String, password: String) {
         _authState.value = AuthResult.Loading
 
-        repository.signUp(email, password) { result ->
+        repository.signUp(universityId, password) { result ->
             _authState.value = result
         }
     }
 
-    fun signIn(email: String, password: String) {
+    fun signIn(universityId: String, password: String) {
         _authState.value = AuthResult.Loading
 
-        repository.signIn(email, password) { result ->
+        repository.signIn(universityId, password) { result ->
             _authState.value = result
         }
     }
@@ -36,5 +36,26 @@ class AuthViewModel(context: Context) : ViewModel() {
 
     fun checkCurrentUser(): Boolean {
         return repository.getCurrentUser() != null
+    }
+
+    fun getCurrentUniversityId(): String? {
+        return repository.getCurrentUniversityId()
+    }
+
+    fun clearAuthState() {
+        _authState.value = null
+    }
+
+    class Factory(private val context: Context) : ViewModelProvider.Factory {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            if (modelClass.isAssignableFrom(AuthViewModel::class.java)) {
+                val sessionManager = SessionManager(context.applicationContext)
+                val authManager = AuthManager()
+                val repository = AuthRepository(authManager, sessionManager)
+                @Suppress("UNCHECKED_CAST")
+                return AuthViewModel(repository) as T
+            }
+            throw IllegalArgumentException("Unknown ViewModel class")
+        }
     }
 }
