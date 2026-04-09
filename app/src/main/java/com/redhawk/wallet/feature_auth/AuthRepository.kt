@@ -5,15 +5,16 @@ class AuthRepository(
     private val sessionManager: SessionManager
 ) {
 
+
     fun signUp(
-        email: String,
+        universityId: String,
         password: String,
         onResult: (AuthResult) -> Unit
     ) {
-        // 🔥 CRITICAL FIX: clear old user/session BEFORE registering
+        // Clear any old Firebase/local session before new registration
         clearAllUserData()
 
-        authManager.signUp(email, password) { result ->
+        authManager.signUpWithUniversityId(universityId, password) { result ->
             if (result is AuthResult.Success) {
                 sessionManager.setLoggedIn(true)
 
@@ -26,11 +27,11 @@ class AuthRepository(
     }
 
     fun signIn(
-        email: String,
+        universityId: String,
         password: String,
         onResult: (AuthResult) -> Unit
     ) {
-        authManager.signIn(email, password) { result ->
+        authManager.signInWithUniversityId(universityId, password) { result ->
             if (result is AuthResult.Success) {
                 sessionManager.setLoggedIn(true)
 
@@ -46,15 +47,18 @@ class AuthRepository(
         clearAllUserData()
     }
 
-
     private fun clearAllUserData() {
-        authManager.signOut()        // Firebase logout
-        sessionManager.clearSession() // Local storage clear
+        authManager.signOut()
+        sessionManager.clearSession()
     }
 
     fun getCurrentUser() = authManager.getCurrentUser()
 
+    fun getCurrentUniversityId(): String? {
+        return authManager.getCurrentUniversityId()
+    }
+
     fun isUserLoggedIn(): Boolean {
-        return authManager.getCurrentUser() != null
+        return authManager.isUserLoggedIn()
     }
 }
