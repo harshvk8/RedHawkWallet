@@ -12,6 +12,9 @@ class FirestoreDataSource(
     private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
 ) {
 
+    // -----------------------------
+    // USER
+    // -----------------------------
     suspend fun createUserProfile(uid: String, profile: UserProfile) {
         db.collection("users").document(uid).set(profile).await()
     }
@@ -25,9 +28,12 @@ class FirestoreDataSource(
         return snap.toObject(clazz)
     }
 
+    // -----------------------------
+    // WALLET
+    // -----------------------------
     suspend fun initWallet(uid: String, initialBalance: Double = 200.0) {
         val wallet = Wallet(
-            uid = uid,
+            uid = uid
             balance = initialBalance,
             updatedAt = System.currentTimeMillis()
         )
@@ -47,10 +53,8 @@ class FirestoreDataSource(
 
         val walletRef = db.collection("wallets").document(uid)
         val txId = UUID.randomUUID().toString()
-        val txRef = db.collection("users")
-            .document(uid)
-            .collection("transactions")
-            .document(txId)
+        val txRef = db.collection("users").document(uid)
+            .collection("transactions").document(txId)
 
         return db.runTransaction { transaction ->
             val walletSnap = transaction.get(walletRef)
@@ -62,18 +66,15 @@ class FirestoreDataSource(
 
             val newBalance = currentBalance - amountToDeduct
 
-            transaction.update(
-                walletRef,
-                mapOf(
-                    "balance" to newBalance,
-                    "updatedAt" to System.currentTimeMillis()
-                )
-            )
+            transaction.update(walletRef, mapOf(
+                "balance" to newBalance,
+                "updatedAt" to System.currentTimeMillis()
+            ))
 
-            val tx = Transactions(
+            val tx = com.redhawk.wallet.data.models.Transactions(
                 id = txId,
                 uid = uid,
-                token = token,
+                token = token,                 // ✅ NFC token saved
                 amount = amountToDeduct,
                 status = "success",
                 type = "nfc_tap",
@@ -86,10 +87,13 @@ class FirestoreDataSource(
         }.await()
     }
 
-    suspend fun tapAndPay(
-        uid: String,
-        amountToDeduct: Double = 5.0
-    ): Transactions {
+    // -----------------------------
+    // TAP TO PAY (Atomic Deduct + Transaction Save)
+    // -----------------------------
+
+
+    suspend fun tapAndPay(uid: String, amountToDeduct: Double = 5.0): Transactions {
+
 
         val walletRef = db.collection("wallets").document(uid)
         val txId = UUID.randomUUID().toString()
@@ -99,6 +103,7 @@ class FirestoreDataSource(
             .document(txId)
 
         return db.runTransaction { transaction ->
+
             val walletSnap = transaction.get(walletRef)
             val currentBalance = walletSnap.getDouble("balance") ?: 0.0
 
@@ -108,13 +113,10 @@ class FirestoreDataSource(
 
             val newBalance = currentBalance - amountToDeduct
 
-            transaction.update(
-                walletRef,
-                mapOf(
-                    "balance" to newBalance,
-                    "updatedAt" to System.currentTimeMillis()
-                )
-            )
+            transaction.update(walletRef, mapOf(
+                "balance" to newBalance,
+                "updatedAt" to System.currentTimeMillis()
+            ))
 
             val token = UUID.randomUUID().toString()
 
@@ -130,14 +132,19 @@ class FirestoreDataSource(
             )
 
             transaction.set(txRef, tx)
+
             tx
         }.await()
     }
 
+    // -----------------------------
+    // TRANSACTIONS
+    // -----------------------------
     suspend fun getLatestTransactions(
         uid: String,
         limit: Long = 20
     ): List<Transactions> {
+
         val snap = db.collection("users")
             .document(uid)
             .collection("transactions")
@@ -162,3 +169,4 @@ class FirestoreDataSource(
         return snap.toObjects(clazz)
     }
 }
+//Changed this file yesterday
