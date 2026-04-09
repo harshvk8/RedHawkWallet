@@ -1,7 +1,6 @@
 package com.redhawk.wallet.feature_auth
 
-sealed class
-AuthResult {
+sealed class AuthResult {
 
     object Success : AuthResult()
 
