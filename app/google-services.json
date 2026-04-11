@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "974636199189",
+    "project_id": "red-hawk-wallet-ec2ea",
+    "storage_bucket": "red-hawk-wallet-ec2ea.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:974636199189:android:0df878c059a1cdb6e4cd1c",
+        "android_client_info": {
+          "package_name": "com.redhawk.wallet"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBd6JSJB6iNHCeY6E6mUnyuV0hxeTQGUwU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
