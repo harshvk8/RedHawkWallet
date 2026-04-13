@@ -1,26 +1,10 @@
 package com.redhawk.wallet.ui.screens
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material3.Button
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -29,13 +13,6 @@ import androidx.navigation.NavController
 import com.redhawk.wallet.ui.components.WalletCard
 import com.redhawk.wallet.ui.navigation.Routes
 
-enum class AccountType(val label: String) {
-    RED_HAWK_DOLLARS("Red Hawk Dollars"),
-    FLEX("Flex"),
-    BONUS("Bonus"),
-    MEAL_SWIPES("Meal Swipes")
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
@@ -43,17 +20,9 @@ fun DashboardScreen(
     tapVm: TapToPayViewModel
 ) {
     val st by tapVm.state.collectAsState()
-    var selectedAccount by remember { mutableStateOf(AccountType.RED_HAWK_DOLLARS) }
 
     LaunchedEffect(Unit) {
         tapVm.loadDashboard()
-    }
-
-    val selectedBalance: String = when (selectedAccount) {
-        AccountType.RED_HAWK_DOLLARS -> st.balanceText.replace("Balance:", "").trim()
-        AccountType.FLEX             -> "$0.00"
-        AccountType.BONUS            -> "$0.00"
-        AccountType.MEAL_SWIPES      -> "0 swipes"
     }
 
     Scaffold(
@@ -61,13 +30,7 @@ fun DashboardScreen(
             TopAppBar(
                 title = { Text("Home") },
                 actions = {
-                    IconButton(
-                        onClick = {
-                            navController.navigate(Routes.QR_ID) {
-                                launchSingleTop = true
-                            }
-                        }
-                    ) {
+                    IconButton(onClick = { navController.navigate(Routes.QR_ID) }) {
                         Icon(
                             imageVector = Icons.Filled.AccountCircle,
                             contentDescription = "Account",
@@ -85,27 +48,11 @@ fun DashboardScreen(
                 .fillMaxSize()
                 .padding(horizontal = 16.dp)
         ) {
-            Spacer(modifier = Modifier.height(16.dp))
-
-            ScrollableTabRow(
-                selectedTabIndex = AccountType.entries.indexOf(selectedAccount),
-                edgePadding = 0.dp
-            ) {
-                AccountType.entries.forEach { type ->
-                    Tab(
-                        selected = selectedAccount == type,
-                        onClick = { selectedAccount = type },
-                        text = { Text(type.label, style = MaterialTheme.typography.labelMedium) }
-                    )
-                }
-            }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            WalletCard(
-                balance = selectedBalance,
-                accountLabel = selectedAccount.label
-            )
+            val balanceOnly = st.balanceText.replace("Balance:", "").trim()
+            WalletCard(balance = balanceOnly)
 
             Spacer(modifier = Modifier.height(16.dp))
 
