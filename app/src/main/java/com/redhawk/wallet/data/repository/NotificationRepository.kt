@@ -7,16 +7,25 @@ class NotificationRepository(
     private val firestore: FirestoreDataSource
 ) {
     private fun notifCollectionPath(uid: String) = "users/$uid/notifications"
-    private fun notifPath(uid: String, notifId: String) = "${notifCollectionPath(uid)}/$notifId"
+
+    private fun notifPath(uid: String, notifId: String) =
+        "${notifCollectionPath(uid)}/$notifId"
 
     suspend fun getNotifications(uid: String): List<NotificationItem> {
         require(uid.isNotBlank()) { "uid cannot be blank" }
-        return firestore.getCollection(notifCollectionPath(uid), NotificationItem::class.java)
+        return firestore.getCollection(
+            notifCollectionPath(uid),
+            NotificationItem::class.java
+        )
     }
 
     suspend fun markAsRead(uid: String, notifId: String) {
         require(uid.isNotBlank()) { "uid cannot be blank" }
         require(notifId.isNotBlank()) { "notifId cannot be blank" }
-        firestore.updateDocument(notifPath(uid, notifId), mapOf("read" to true))
+
+        firestore.updateDocument(
+            notifPath(uid, notifId),
+            mapOf("read" to true)
+        )
     }
 }

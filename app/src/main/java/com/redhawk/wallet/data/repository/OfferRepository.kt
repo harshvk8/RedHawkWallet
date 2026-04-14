@@ -7,6 +7,7 @@ class OfferRepository(
     private val firestore: FirestoreDataSource
 ) {
     private val collectionPath = "offers"
+
     private fun offerPath(offerId: String) = "$collectionPath/$offerId"
 
     suspend fun getOffers(): List<Offer> {
@@ -21,9 +22,13 @@ class OfferRepository(
     suspend fun redeemOffer(offerId: String, uid: String) {
         require(offerId.isNotBlank()) { "offerId cannot be blank" }
         require(uid.isNotBlank()) { "uid cannot be blank" }
+
         firestore.setDocument(
             "users/$uid/redeemedOffers/$offerId",
-            mapOf("offerId" to offerId, "redeemedAt" to System.currentTimeMillis())
+            mapOf(
+                "offerId" to offerId,
+                "redeemedAt" to System.currentTimeMillis()
+            )
         )
     }
 }

@@ -1,31 +1,48 @@
 package com.redhawk.wallet.data.datasource
 
 import com.google.firebase.firestore.FirebaseFirestore
-import com.redhawk.wallet.data.models.UserProfile
-import com.redhawk.wallet.data.models.Wallet
 import kotlinx.coroutines.tasks.await
 
 class FirestoreDataSource(
-    private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
+    private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
 ) {
 
-    suspend fun createUserProfile(uid: String, profile: UserProfile) {
-        db.collection("users")
-            .document(uid)
-            .set(profile)
+    suspend fun <T> getCollection(
+        collectionPath: String,
+        clazz: Class<T>
+    ): List<T> {
+        return firestore.collection(collectionPath)
+            .get()
+            .await()
+            .documents
+            .mapNotNull { it.toObject(clazz) }
+    }
+
+    suspend fun <T> getDocument(
+        documentPath: String,
+        clazz: Class<T>
+    ): T? {
+        return firestore.document(documentPath)
+            .get()
+            .await()
+            .toObject(clazz)
+    }
+
+    suspend fun updateDocument(
+        documentPath: String,
+        data: Map<String, Any>
+    ) {
+        firestore.document(documentPath)
+            .update(data)
             .await()
     }
 
-    suspend fun createWallet(uid: String) {
-        val wallet = Wallet(
-            uid = uid,
-            balance = 0.0,
-            updatedAt = System.currentTimeMillis()
-        )
-
-        db.collection("wallets")
-            .document(uid)
-            .set(wallet)
+    suspend fun setDocument(
+        documentPath: String,
+        data: Any
+    ) {
+        firestore.document(documentPath)
+            .set(data)
             .await()
     }
 }

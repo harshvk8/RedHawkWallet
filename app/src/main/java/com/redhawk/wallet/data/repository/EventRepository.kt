@@ -7,6 +7,7 @@ class EventRepository(
     private val firestore: FirestoreDataSource
 ) {
     private val collectionPath = "events"
+
     private fun eventPath(eventId: String) = "$collectionPath/$eventId"
 
     suspend fun getEvents(): List<Event> {

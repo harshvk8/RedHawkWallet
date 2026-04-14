@@ -2,12 +2,7 @@ package com.redhawk.wallet.data.models
 
 data class UserProfile(
     val uid: String = "",
-    val name: String = "",
+    val fullName: String = "",
     val email: String = "",
-    val studentId: String = "",
-    val professorId: String = "",
-    val photoUrl: String? = null,
-    val role: String = "student",
-    val isEmailVerified: Boolean = false,
-    val createdAt: Long = 0L
+    val studentId: String = ""
 )

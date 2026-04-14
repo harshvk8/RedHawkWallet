@@ -1,9 +1,9 @@
 package com.redhawk.wallet.data.models
 
-data class Transaction(
+data class NotificationItem(
     val id: String = "",
     val title: String = "",
-    val amount: Double = 0.0,
-    val type: String = "",
+    val message: String = "",
+    val read: Boolean = false,
     val timestamp: Long = 0L
 )
