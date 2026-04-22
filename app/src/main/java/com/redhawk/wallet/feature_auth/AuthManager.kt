@@ -8,17 +8,11 @@ class AuthManager {
 
     private val firebaseAuth: FirebaseAuth = FirebaseAuth.getInstance()
 
-    fun getCurrentUser(): FirebaseUser? {
-        return firebaseAuth.currentUser
-    }
+    fun getCurrentUser(): FirebaseUser? = firebaseAuth.currentUser
 
-    fun isLoggedIn(): Boolean {
-        return firebaseAuth.currentUser != null
-    }
+    fun isLoggedIn(): Boolean = firebaseAuth.currentUser != null
 
-    fun isEmailVerified(): Boolean {
-        return firebaseAuth.currentUser?.isEmailVerified ?: false
-    }
+    fun isEmailVerified(): Boolean = firebaseAuth.currentUser?.isEmailVerified ?: false
 
     suspend fun reloadUser() {
         firebaseAuth.currentUser?.reload()?.await()
@@ -57,11 +51,16 @@ class AuthManager {
             Result.failure(e)
         }
     }
-//new
+
     suspend fun sendEmailVerification(): Result<Unit> {
         return try {
-            firebaseAuth.currentUser?.sendEmailVerification()?.await()
-            Result.success(Unit)
+            val user = firebaseAuth.currentUser
+            if (user == null) {
+                Result.failure(Exception("No logged in user found"))
+            } else {
+                user.sendEmailVerification().await()
+                Result.success(Unit)
+            }
         } catch (e: Exception) {
             Result.failure(e)
         }

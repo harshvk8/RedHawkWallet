@@ -1,6 +1,5 @@
 package com.redhawk.wallet.ui.screens
 
-import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
@@ -16,8 +15,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
 import com.redhawk.wallet.R
 
 private fun isValidName(name: String): Boolean {
@@ -31,8 +28,8 @@ private fun isValidMontclairEmail(email: String): Boolean {
     return trimmed.contains("@") && trimmed.endsWith("@montclair.edu", ignoreCase = true)
 }
 
-private fun isValidStudentId(studentId: String): Boolean {
-    val trimmed = studentId.trim()
+private fun isValidUniversityId(universityId: String): Boolean {
+    val trimmed = universityId.trim().uppercase()
     if (trimmed.length != 9) return false
     if (trimmed[0] != 'M') return false
     return trimmed.substring(1).all { it.isDigit() }
@@ -40,34 +37,31 @@ private fun isValidStudentId(studentId: String): Boolean {
 
 @Composable
 fun RegisterScreen(
-    onRegisterClick: (name: String, studentId: String, email: String, password: String) -> Unit,
+    onRegisterClick: (
+        name: String,
+        universityId: String,
+        email: String,
+        password: String,
+        role: String
+    ) -> Unit,
     onBackToLoginClick: () -> Unit
 ) {
     val context = LocalContext.current
-    val auth = remember { FirebaseAuth.getInstance() }
-    val db = remember { FirebaseFirestore.getInstance() }
 
     var name by remember { mutableStateOf("") }
-    var studentId by remember { mutableStateOf("") }
+    var universityId by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
+    var isProfessor by remember { mutableStateOf(false) }
 
     var nameError by remember { mutableStateOf(false) }
-    var studentIdError by remember { mutableStateOf(false) }
+    var universityIdError by remember { mutableStateOf(false) }
     var emailError by remember { mutableStateOf(false) }
     var passwordMatchError by remember { mutableStateOf(false) }
 
     var passwordVisible by remember { mutableStateOf(false) }
     var confirmPasswordVisible by remember { mutableStateOf(false) }
-
-    var isRegistering by remember { mutableStateOf(false) }
-    var registerError by remember { mutableStateOf<String?>(null) }
-
-    // Professor fields
-    var isProfessor by remember { mutableStateOf(false) }
-    var professorId by remember { mutableStateOf("") }
-    var branch by remember { mutableStateOf("") }
 
     val hasCapitalLetter = password.any { it.isUpperCase() }
     val hasNumber = password.any { it.isDigit() }
@@ -78,12 +72,11 @@ fun RegisterScreen(
 
     val isFormValid =
         name.isNotBlank() &&
-                studentId.isNotBlank() &&
+                universityId.isNotBlank() &&
                 email.isNotBlank() &&
                 isPasswordValid &&
-                (!isProfessor || (professorId.isNotBlank() && branch.isNotBlank())) && // Added Professor check
                 !nameError &&
-                !studentIdError &&
+                !universityIdError &&
                 !emailError &&
                 !passwordMatchError
 
@@ -112,7 +105,6 @@ fun RegisterScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // --- FULL NAME FIELD ---
         OutlinedTextField(
             value = name,
             onValueChange = { input ->
@@ -133,23 +125,23 @@ fun RegisterScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // --- STUDENT ID FIELD ---
         OutlinedTextField(
-            value = studentId,
+            value = universityId,
             onValueChange = { input ->
                 val upper = input.uppercase()
                 val filtered = upper.filterIndexed { index, c ->
                     if (index == 0) c == 'M' || c.isDigit() else c.isDigit()
                 }
-                studentId = filtered.take(9)
-                studentIdError = studentId.isNotEmpty() && !isValidStudentId(studentId)
+                universityId = filtered.take(9)
+                universityIdError =
+                    universityId.isNotEmpty() && !isValidUniversityId(universityId)
             },
-            label = { Text("University ID (M########)") }, //Changed student id to university id for universal id
+            label = { Text("University ID (M########)") },
             singleLine = true,
-            isError = studentIdError,
+            isError = universityIdError,
             supportingText = {
-                if (studentIdError) {
-                    Text("Must start with M + 8 digits (ex: M12345678)")
+                if (universityIdError) {
+                    Text("Must start with M + 8 digits (example: M12345678)")
                 }
             },
             modifier = Modifier.fillMaxWidth()
@@ -157,8 +149,10 @@ fun RegisterScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // --- PROFESSOR TOGGLE + FIELDS ---
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Checkbox(
                 checked = isProfessor,
                 onCheckedChange = { isProfessor = it }
@@ -166,30 +160,8 @@ fun RegisterScreen(
             Text("Register as Professor")
         }
 
-        if (isProfessor) {
-            Spacer(modifier = Modifier.height(8.dp))
-            OutlinedTextField(
-                value = professorId,
-                onValueChange = { professorId = it },
-                label = { Text("Professor ID") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            OutlinedTextField(
-                value = branch,
-                onValueChange = { branch = it },
-                label = { Text("Branch / Department") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
-
         Spacer(modifier = Modifier.height(12.dp))
 
-        // --- EMAIL FIELD ---
         OutlinedTextField(
             value = email,
             onValueChange = { input ->
@@ -209,7 +181,6 @@ fun RegisterScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // --- PASSWORD FIELD ---
         OutlinedTextField(
             value = password,
             onValueChange = { newValue ->
@@ -242,7 +213,6 @@ fun RegisterScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // --- CONFIRM PASSWORD FIELD ---
         OutlinedTextField(
             value = confirmPassword,
             onValueChange = { newValue ->
@@ -272,113 +242,47 @@ fun RegisterScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        if (!registerError.isNullOrBlank()) {
-            Text(
-                text = registerError!!,
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodySmall
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-        }
-
-        // --- REGISTER BUTTON ---
         Button(
             onClick = {
                 val nameOk = isValidName(name)
-                val idOk = isValidStudentId(studentId)
+                val idOk = isValidUniversityId(universityId)
                 val emailOk = isValidMontclairEmail(email)
                 val passOk = isPasswordValid
 
-                registerError = null
                 nameError = !nameOk
-                studentIdError = !idOk
+                universityIdError = !idOk
                 emailError = !emailOk
                 passwordMatchError = !passOk
 
                 if (!isFormValid) {
                     Toast.makeText(
                         context,
-                        "Please fill details correctly before registering",
+                        "Please fill in all details correctly before registering",
                         Toast.LENGTH_SHORT
                     ).show()
                     return@Button
                 }
 
-                isRegistering = true
-                val e = email.trim()
-                val p = password
                 val role = if (isProfessor) "professor" else "student"
 
-                Log.d("AUTH", "Registering email=$e as $role")
-
-                auth.createUserWithEmailAndPassword(e, p)
-                    .addOnSuccessListener {
-                        val uid = auth.currentUser?.uid
-                        if (uid == null) {
-                            isRegistering = false
-                            registerError = "Registered but UID missing"
-                            return@addOnSuccessListener
-                        }
-
-                        // 🔥 UPDATED USER MAP WITH ROLE
-                        val userMap = hashMapOf(
-                            "name" to name.trim(),
-                            "studentId" to studentId.trim(),
-                            "email" to e,
-                            "role" to role,
-                            "professorId" to if (isProfessor) professorId.trim() else null,
-                            "branch" to if (isProfessor) branch.trim() else null,
-                            "createdAt" to com.google.firebase.Timestamp.now()
-                        )
-
-                        db.collection("users").document(uid).set(userMap)
-                            .addOnSuccessListener {
-                                auth.currentUser?.sendEmailVerification()
-                                    ?.addOnSuccessListener {
-                                        isRegistering = false
-                                        Log.d("AUTH", "REGISTER+PROFILE OK uid=$uid")
-                                        Toast.makeText(
-                                            context,
-                                            "Registered! Verification email sent.",
-                                            Toast.LENGTH_LONG
-                                        ).show()
-
-                                        onBackToLoginClick()
-                                    }
-                                    ?.addOnFailureListener { ex ->
-                                        isRegistering = false
-                                        registerError = "Verification email failed: ${ex.message}"
-                                    }
-                            }
-                            .addOnFailureListener { ex ->
-                                isRegistering = false
-                                registerError = "Profile save failed: ${ex.message}"
-                            }
-                    }
-                    .addOnFailureListener { ex ->
-                        isRegistering = false
-                        registerError = ex.message ?: "Register failed"
-                    }
+                onRegisterClick(
+                    name.trim(),
+                    universityId.trim().uppercase(),
+                    email.trim(),
+                    password,
+                    role
+                )
             },
-            enabled = isFormValid && !isRegistering,
+            enabled = isFormValid,
             modifier = Modifier.fillMaxWidth()
         ) {
-            if (isRegistering) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(18.dp),
-                    strokeWidth = 2.dp
-                )
-                Spacer(modifier = Modifier.width(10.dp))
-            }
-            Text(if (isRegistering) "Creating..." else "Register")
+            Text("Register")
         }
 
         Spacer(modifier = Modifier.height(10.dp))
 
         TextButton(
-            onClick = {
-                if (!isRegistering) onBackToLoginClick()
-            }
+            onClick = onBackToLoginClick
         ) {
             Text("Already have an account? Login")
         }

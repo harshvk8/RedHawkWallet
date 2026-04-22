@@ -6,7 +6,6 @@ import com.redhawk.wallet.data.models.UserProfile
 class UserRepository(
     private val firestore: FirestoreDataSource
 ) {
-    // users/{uid}
     private fun userPath(uid: String) = "users/$uid"
 
     suspend fun createUserProfile(profile: UserProfile) {
@@ -17,5 +16,10 @@ class UserRepository(
     suspend fun getUserProfile(uid: String): UserProfile? {
         require(uid.isNotBlank()) { "uid cannot be blank" }
         return firestore.getDocument(userPath(uid), UserProfile::class.java)
+    }
+
+    suspend fun updateUserProfile(uid: String, updates: Map<String, Any>) {
+        require(uid.isNotBlank()) { "uid cannot be blank" }
+        firestore.updateDocument(userPath(uid), updates)
     }
 }

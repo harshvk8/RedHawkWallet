@@ -1,7 +1,9 @@
 package com.redhawk.wallet.ui.navigation
 
 import androidx.compose.runtime.Composable
-import androidx.lifecycle.ViewModelProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -15,6 +17,7 @@ import com.redhawk.wallet.data.repository.OfferRepository
 import com.redhawk.wallet.data.repository.WalletRepository
 import com.redhawk.wallet.events.EventsOffersViewModel
 import com.redhawk.wallet.events.EventsOffersViewModelFactory
+import com.redhawk.wallet.feature_auth.AuthResult
 import com.redhawk.wallet.feature_auth.AuthViewModel
 import com.redhawk.wallet.qr.QrIdScreen
 import com.redhawk.wallet.qr.QrScannerScreen
@@ -102,12 +105,30 @@ fun AppNav(
         }
 
         composable(Routes.REGISTER) {
-            RegisterScreen(
-                onRegisterClick = { _, _, _, _ ->
-                    navController.navigate(Routes.EMAIL_VERIFICATION) {
-                        popUpTo(Routes.REGISTER) { inclusive = true }
-                        launchSingleTop = true
+            val authState by authViewModel.authState.collectAsState()
+
+            LaunchedEffect(authState) {
+                when (authState) {
+                    is AuthResult.Success -> {
+                        authViewModel.clearState()
+                        navController.navigate(Routes.EMAIL_VERIFICATION) {
+                            popUpTo(Routes.REGISTER) { inclusive = true }
+                            launchSingleTop = true
+                        }
                     }
+                    else -> Unit
+                }
+            }
+
+            RegisterScreen(
+                onRegisterClick = { name, universityId, email, password, role ->
+                    authViewModel.register(
+                        name = name,
+                        universityId = universityId,
+                        email = email,
+                        password = password,
+                        role = role
+                    )
                 },
                 onBackToLoginClick = {
                     navController.navigate(Routes.LOGIN) {

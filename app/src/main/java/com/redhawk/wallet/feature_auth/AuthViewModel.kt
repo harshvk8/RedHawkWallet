@@ -5,6 +5,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import com.redhawk.wallet.data.datasource.FirestoreDataSource
+import com.redhawk.wallet.data.models.UserProfile
+import com.redhawk.wallet.data.repository.UserRepository
 import com.redhawk.wallet.data.repository.WalletRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,7 +20,9 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
     private val authManager = AuthManager()
     private val sessionManager = SessionManager(context)
     private val repository = AuthRepository(authManager, sessionManager)
-    private val walletRepository = WalletRepository(FirestoreDataSource())
+    private val firestoreDataSource = FirestoreDataSource()
+    private val userRepository = UserRepository(firestoreDataSource)
+    private val walletRepository = WalletRepository(firestoreDataSource)
 
     private val _authState = MutableStateFlow<AuthResult?>(null)
     val authState: StateFlow<AuthResult?> = _authState
@@ -38,9 +42,10 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
 
     fun register(
         name: String,
-        studentId: String,
+        universityId: String,
         email: String,
-        password: String
+        password: String,
+        role: String
     ) {
         _isLoading.value = true
         _message.value = null
@@ -60,13 +65,27 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
                         return@launch
                     }
 
+                    val currentUser = FirebaseAuth.getInstance().currentUser
+
+                    val profile = UserProfile(
+                        uid = uid,
+                        name = name.trim(),
+                        email = email.trim(),
+                        universityId = universityId.trim().uppercase(),
+                        photoUrl = null,
+                        role = role,
+                        isEmailVerified = currentUser?.isEmailVerified == true,
+                        createdAt = System.currentTimeMillis()
+                    )
+
+                    userRepository.createUserProfile(profile)
+
                     val wallet = walletRepository.getWallet(uid)
                     if (wallet == null) {
                         walletRepository.initWallet(uid)
                     }
 
-                    _isEmailVerified.value =
-                        FirebaseAuth.getInstance().currentUser?.isEmailVerified == true
+                    _isEmailVerified.value = currentUser?.isEmailVerified == true
 
                     _message.value = if (_isEmailVerified.value) {
                         "Registration successful."
@@ -154,14 +173,13 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
                 _isLoading.value = true
                 _message.value = null
 
-                val user = FirebaseAuth.getInstance().currentUser
-                if (user == null) {
-                    _message.value = "No logged in user found."
-                    return@launch
+                val result = authManager.sendEmailVerification()
+                if (result.isSuccess) {
+                    _message.value = "Verification email sent."
+                } else {
+                    _message.value =
+                        result.exceptionOrNull()?.message ?: "Failed to send verification email."
                 }
-
-                user.sendEmailVerification().await()
-                _message.value = "Verification email sent."
             } catch (e: Exception) {
                 _message.value = e.message ?: "Failed to send verification email."
             } finally {

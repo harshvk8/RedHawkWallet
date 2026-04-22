@@ -67,21 +67,16 @@ fun QrIdScreen(
     val firebaseUser = auth.currentUser
     val context = LocalContext.current
 
-
     var showQr by remember { mutableStateOf(false) }
 
-    val student = vm.userProfile
+    val user = vm.userProfile
     val qrBmp = vm.qrBitmap
     val verificationUi = vm.verificationUi
 
-    val displayName = student.name.ifBlank { firebaseUser?.displayName ?: "Unknown User" }
-    val displayId = if (student.role.lowercase() == "professor") {
-        student.professorId.ifBlank { student.studentId.ifBlank { "—" } }
-    } else {
-        student.studentId.ifBlank { "—" }
-    }
-    val displayEmail = student.email.ifBlank { firebaseUser?.email ?: "—" }
-    val displayUid = student.uid.ifBlank { firebaseUser?.uid ?: "—" }
+    val displayName = user.name.ifBlank { firebaseUser?.displayName ?: "Unknown User" }
+    val displayId = user.universityId.ifBlank { "—" }
+    val displayEmail = user.email.ifBlank { firebaseUser?.email ?: "—" }
+    val displayUid = user.uid.ifBlank { firebaseUser?.uid ?: "—" }
 
     val red = Color(0xFFC8102E)
     val redDark = Color(0xFF483F48)
@@ -99,7 +94,7 @@ fun QrIdScreen(
     }
 
     LaunchedEffect(Unit) {
-        vm.loadStudentProfile()
+        vm.loadUserProfile()
     }
 
     Scaffold(
@@ -162,9 +157,9 @@ fun QrIdScreen(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        if (!student.photoUrl.isNullOrBlank()) {
+                        if (!user.photoUrl.isNullOrBlank()) {
                             AsyncImage(
-                                model = student.photoUrl,
+                                model = user.photoUrl,
                                 contentDescription = "Profile Photo",
                                 modifier = Modifier
                                     .size(84.dp)
@@ -197,7 +192,7 @@ fun QrIdScreen(
                             )
 
                             Text(
-                                text = displayId,
+                                text = "University ID: $displayId",
                                 color = muted,
                                 style = MaterialTheme.typography.bodyMedium
                             )
@@ -269,6 +264,7 @@ fun QrIdScreen(
             ) {
                 Text("Scan & Verify", fontWeight = FontWeight.Bold)
             }
+
             OutlinedButton(
                 onClick = {
                     navController.navigate(Routes.EVENTS_OFFERS)
@@ -280,6 +276,7 @@ fun QrIdScreen(
             ) {
                 Text("Events & Offers", fontWeight = FontWeight.Bold)
             }
+
             verificationUi?.let { result ->
                 Card(
                     shape = RoundedCornerShape(16.dp),
@@ -302,37 +299,22 @@ fun QrIdScreen(
                         )
 
                         if (result.name.isNotBlank()) {
-                            Text(
-                                text = "Name: ${result.name}",
-                                color = textColor
-                            )
+                            Text(text = "Name: ${result.name}", color = textColor)
                         }
 
                         if (result.role.isNotBlank()) {
-                            Text(
-                                text = "Role: ${result.role}",
-                                color = textColor
-                            )
+                            Text(text = "Role: ${result.role}", color = textColor)
                         }
 
                         if (result.idLabel.isNotBlank()) {
-                            Text(
-                                text = "${result.idLabel}: ${result.idValue}",
-                                color = textColor
-                            )
+                            Text(text = "${result.idLabel}: ${result.idValue}", color = textColor)
                         }
 
                         if (result.email.isNotBlank()) {
-                            Text(
-                                text = "Email: ${result.email}",
-                                color = textColor
-                            )
+                            Text(text = "Email: ${result.email}", color = textColor)
                         }
 
-                        Text(
-                            text = result.message,
-                            color = muted
-                        )
+                        Text(text = result.message, color = muted)
 
                         OutlinedButton(
                             onClick = { vm.clearVerification() },
@@ -371,7 +353,7 @@ fun QrIdScreen(
                             } else {
                                 Image(
                                     bitmap = qrBmp.asImageBitmap(),
-                                    contentDescription = "Student QR Code",
+                                    contentDescription = "User QR Code",
                                     modifier = Modifier.fillMaxSize()
                                 )
                             }
