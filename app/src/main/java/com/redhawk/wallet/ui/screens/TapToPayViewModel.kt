@@ -52,8 +52,8 @@ class TapToPayViewModel(
 
                 _state.value = _state.value.copy(
                     balanceText = "Balance: $${wallet?.balance ?: 0.0}",
-                    transactionsText = txs.joinToString("\n") {
-                        "• -$${it.amount} | ${it.status} | ${it.token.take(8)}..."
+                    transactionsText = txs.joinToString("\n") { tx ->
+                        "• -$${tx.amount} | ${tx.status} | ${tx.token.take(8)}..."
                     },
                     isEmailVerified = emailVerified,
                     error = if (!emailVerified) {

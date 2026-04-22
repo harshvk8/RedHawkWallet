@@ -1,7 +1,7 @@
 package com.redhawk.wallet.data.models
 
 data class Wallet(
-    val id: String = "main",
+    val uid: String = "",
     val balance: Double = 0.0,
-    val points: Int = 0
+    val updatedAt: Long = 0L
 )

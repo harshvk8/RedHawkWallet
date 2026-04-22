@@ -1,7 +1,7 @@
 package com.redhawk.wallet.data.repository
 
 import com.redhawk.wallet.data.datasource.FirestoreDataSource
-import com.redhawk.wallet.data.models.Transaction
+import com.redhawk.wallet.data.models.Transactions
 
 class TransactionRepository(
     private val firestore: FirestoreDataSource
@@ -12,40 +12,40 @@ class TransactionRepository(
     private fun transactionPath(uid: String, transactionId: String) =
         "${transactionsPath(uid)}/$transactionId"
 
-    suspend fun getTransactions(uid: String): List<Transaction> {
+    suspend fun getTransactions(uid: String): List<Transactions> {
         require(uid.isNotBlank()) { "uid cannot be blank" }
         return firestore.getCollection(
             transactionsPath(uid),
-            Transaction::class.java
+            Transactions::class.java
         )
     }
 
-    suspend fun getTransactionHistory(uid: String): List<Transaction> {
+    suspend fun getTransactionHistory(uid: String): List<Transactions> {
         return getTransactions(uid)
     }
 
-    suspend fun addTransaction(uid: String, transactionId: String, transaction: Transaction) {
+    suspend fun addTransaction(uid: String, transactionId: String, transaction: Transactions) {
         require(uid.isNotBlank()) { "uid cannot be blank" }
         require(transactionId.isNotBlank()) { "transactionId cannot be blank" }
-        firestore.setDocument(transactionPath(uid, transactionId), transaction)
+
+        val finalTx = transaction.copy(id = transactionId, uid = uid)
+        firestore.setDocument(transactionPath(uid, transactionId), finalTx)
     }
 
-    suspend fun addTransaction(uid: String, transaction: Transaction) {
+    suspend fun addTransaction(uid: String, transaction: Transactions) {
         require(uid.isNotBlank()) { "uid cannot be blank" }
 
-        val id = if (transaction.id.isNotBlank()) {
+        val txId = if (transaction.id.isNotBlank()) {
             transaction.id
         } else {
             System.currentTimeMillis().toString()
         }
 
-        firestore.setDocument(
-            transactionPath(uid, id),
-            transaction.copy(id = id)
-        )
+        val finalTx = transaction.copy(id = txId, uid = uid)
+        firestore.setDocument(transactionPath(uid, txId), finalTx)
     }
 
-    suspend fun createTransaction(uid: String, transaction: Transaction) {
+    suspend fun createTransaction(uid: String, transaction: Transactions) {
         addTransaction(uid, transaction)
     }
 }

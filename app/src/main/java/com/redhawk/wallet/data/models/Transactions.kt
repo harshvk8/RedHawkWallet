@@ -1,9 +1,12 @@
 package com.redhawk.wallet.data.models
 
-data class Transaction(
+data class Transactions(
     val id: String = "",
-    val title: String = "",
+    val uid: String = "",
+    val token: String = "",
     val amount: Double = 0.0,
+    val status: String = "",
     val type: String = "",
+    val note: String = "",
     val timestamp: Long = 0L
 )

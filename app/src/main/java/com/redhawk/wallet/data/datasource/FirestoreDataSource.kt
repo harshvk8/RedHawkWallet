@@ -44,7 +44,9 @@ class FirestoreDataSource(
         val snap = db.collection("wallets").document(uid).get().await()
         return snap.toObject(Wallet::class.java)
     }
-
+    suspend fun updateDocument(documentPath: String, data: Map<String, Any>) {
+        db.document(documentPath).update(data).await()
+    }
     suspend fun tapAndPayWithToken(
         uid: String,
         token: String,
