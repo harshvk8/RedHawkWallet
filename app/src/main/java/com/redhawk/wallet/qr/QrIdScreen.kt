@@ -84,7 +84,7 @@ fun QrIdScreen(
     val displayUid = student.uid.ifBlank { firebaseUser?.uid ?: "—" }
 
     val red = Color(0xFFC8102E)
-    val redDark = Color(0xFF9E0B22)
+    val redDark = Color(0xFF483F48)
     val border = Color(0xFFE6E6E6)
     val textColor = Color(0xFF1F1F1F)
     val muted = Color(0xFF666666)
@@ -269,7 +269,17 @@ fun QrIdScreen(
             ) {
                 Text("Scan & Verify", fontWeight = FontWeight.Bold)
             }
-
+            OutlinedButton(
+                onClick = {
+                    navController.navigate(Routes.EVENTS_OFFERS)
+                },
+                shape = RoundedCornerShape(14.dp),
+                border = BorderStroke(1.dp, redDark),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = redDark),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Events & Offers", fontWeight = FontWeight.Bold)
+            }
             verificationUi?.let { result ->
                 Card(
                     shape = RoundedCornerShape(16.dp),
