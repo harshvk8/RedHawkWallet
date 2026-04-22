@@ -1,6 +1,7 @@
 package com.redhawk.wallet.data.repository
 
 import com.redhawk.wallet.data.datasource.FirestoreDataSource
+import com.redhawk.wallet.data.models.AccountType
 import com.redhawk.wallet.data.models.Transactions
 import com.redhawk.wallet.data.models.Wallet
 
@@ -18,15 +19,15 @@ class WalletRepository(
         firestore.initWallet(uid)
     }
 
-    suspend fun updateBalance(uid: String, balance: Double) {
-        require(uid.isNotBlank()) { "uid cannot be blank" }
-        firestore.updateDocument(
-            "wallets/$uid",
-            mapOf(
-                "balance" to balance,
-                "updatedAt" to System.currentTimeMillis()
-            )
-        )
+    suspend fun getBalanceForAccount(uid: String, accountType: AccountType): Double {
+        val wallet = getWallet(uid) ?: return 0.0
+
+        return when (accountType) {
+            AccountType.RED_HAWK_DOLLARS -> wallet.redHawkDollars
+            AccountType.FLEX -> wallet.flex
+            AccountType.BONUS -> wallet.bonus
+            AccountType.MEAL_SWIPES -> wallet.mealSwipes
+        }
     }
 
     suspend fun getTransactions(uid: String): List<Transactions> {

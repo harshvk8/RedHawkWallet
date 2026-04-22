@@ -4,12 +4,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
+import com.redhawk.wallet.data.models.AccountType
 import com.redhawk.wallet.data.repository.WalletRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 data class TapUiState(
+    val selectedAccount: AccountType = AccountType.RED_HAWK_DOLLARS,
     val balanceText: String = "Balance: --",
     val transactionsText: String = "",
     val error: String? = null,
@@ -34,6 +36,11 @@ class TapToPayViewModel(
         return user?.isEmailVerified ?: false
     }
 
+    fun selectAccount(accountType: AccountType) {
+        _state.value = _state.value.copy(selectedAccount = accountType)
+        loadDashboard()
+    }
+
     fun loadDashboard() {
         val u = uid()
         if (u.isBlank()) return
@@ -48,10 +55,17 @@ class TapToPayViewModel(
                     wallet = walletRepo.getWallet(u)
                 }
 
+                val selectedAccount = _state.value.selectedAccount
+                val selectedBalance = walletRepo.getBalanceForAccount(u, selectedAccount)
                 val txs = walletRepo.getLatestTransactions(u)
 
+                val formattedBalance = when (selectedAccount) {
+                    AccountType.MEAL_SWIPES -> "${selectedBalance.toInt()} left"
+                    else -> "$$selectedBalance"
+                }
+
                 _state.value = _state.value.copy(
-                    balanceText = "Balance: $${wallet?.balance ?: 0.0}",
+                    balanceText = formattedBalance,
                     transactionsText = txs.joinToString("\n") { tx ->
                         "• -$${tx.amount} | ${tx.status} | ${tx.token.take(8)}..."
                     },

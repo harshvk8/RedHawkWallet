@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.redhawk.wallet.ui.components.AccountSelector
 import com.redhawk.wallet.ui.components.WalletCard
 import com.redhawk.wallet.ui.navigation.Routes
 
@@ -51,8 +52,17 @@ fun DashboardScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            val balanceOnly = st.balanceText.replace("Balance:", "").trim()
-            WalletCard(balance = balanceOnly)
+            AccountSelector(
+                selectedAccount = st.selectedAccount,
+                onAccountSelected = { tapVm.selectAccount(it) }
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            WalletCard(
+                balance = st.balanceText,
+                accountLabel = st.selectedAccount.displayName
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
 

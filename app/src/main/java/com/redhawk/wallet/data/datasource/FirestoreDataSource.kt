@@ -29,12 +29,15 @@ class FirestoreDataSource(
     }
 
     // -----------------------------
-    // WALLET
-    // -----------------------------
-    suspend fun initWallet(uid: String, initialBalance: Double = 200.0) {
+// WALLET
+// -----------------------------
+    suspend fun initWallet(uid: String) {
         val wallet = Wallet(
             uid = uid,
-            balance = initialBalance,
+            redHawkDollars = 200.0,
+            flex = 100.0,
+            bonus = 50.0,
+            mealSwipes = 10.0,
             updatedAt = System.currentTimeMillis()
         )
         db.collection("wallets").document(uid).set(wallet).await()
