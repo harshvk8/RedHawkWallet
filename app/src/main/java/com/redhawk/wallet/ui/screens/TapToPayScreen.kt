@@ -7,6 +7,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.redhawk.wallet.ui.components.AccountSelector
 
 @Composable
 fun TapToPayScreen(vm: TapToPayViewModel) {
@@ -22,11 +23,24 @@ fun TapToPayScreen(vm: TapToPayViewModel) {
             .fillMaxSize()
             .padding(16.dp)
     ) {
+        Text(
+            text = "Select Account",
+            style = MaterialTheme.typography.titleMedium
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        AccountSelector(
+            selectedAccount = st.selectedAccount,
+            onAccountSelected = { vm.selectAccount(it) }
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
         Text(st.balanceText, style = MaterialTheme.typography.titleLarge)
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // ✅ Show verification warning if not verified
         if (!st.isEmailVerified) {
             Card(
                 colors = CardDefaults.cardColors(
@@ -44,14 +58,18 @@ fun TapToPayScreen(vm: TapToPayViewModel) {
             Spacer(modifier = Modifier.height(12.dp))
         }
 
+        val buttonText = when (st.selectedAccount) {
+            com.redhawk.wallet.data.models.AccountType.MEAL_SWIPES -> "Simulate Tap (-1 Swipe)"
+            else -> "Simulate Tap (-$5)"
+        }
+
         Button(
             onClick = { vm.simulateTap() },
             enabled = !st.loading && st.isEmailVerified
         ) {
-            Text(if (st.loading) "Processing..." else "Simulate Tap (-$5)")
+            Text(if (st.loading) "Processing..." else buttonText)
         }
 
-        // ✅ Show disabled message if email not verified
         if (!st.isEmailVerified) {
             Spacer(modifier = Modifier.height(8.dp))
             Text(

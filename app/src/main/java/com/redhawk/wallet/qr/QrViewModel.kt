@@ -86,11 +86,16 @@ class QrViewModel : ViewModel() {
                 if (doc.exists()) {
                     val role = (doc.getString("role") ?: "student").lowercase()
 
+                    val resolvedUniversityId =
+                        doc.getString("universityId")
+                            ?: doc.getString("studentId")
+                            ?: ""
+
                     userProfile = UserProfile(
                         uid = uid,
                         name = doc.getString("name") ?: currentUser.displayName.orEmpty(),
                         email = doc.getString("email") ?: currentUser.email.orEmpty(),
-                        universityId = doc.getString("universityId") ?: "",
+                        universityId = resolvedUniversityId,
                         photoUrl = doc.getString("photoUrl"),
                         role = role,
                         isEmailVerified = doc.getBoolean("isEmailVerified")
@@ -244,8 +249,17 @@ class QrViewModel : ViewModel() {
                 val name = doc.getString("name") ?: "Unknown User"
                 val email = doc.getString("email") ?: ""
                 val role = (doc.getString("role") ?: "student").lowercase()
-                val universityId = doc.getString("universityId") ?: ""
-                val isEmailVerified = doc.getBoolean("isEmailVerified") ?: false
+                val universityId =
+                    doc.getString("universityId")
+                        ?: doc.getString("studentId")
+                        ?: ""
+
+                val scannedUser = auth.currentUser
+                val firebaseVerified =
+                    scannedUser?.uid == uid && scannedUser.isEmailVerified
+
+                val firestoreVerified = doc.getBoolean("isEmailVerified") ?: false
+                val isEmailVerified = firestoreVerified || firebaseVerified
 
                 if (!isEmailVerified) {
                     verificationUi = VerificationUi(

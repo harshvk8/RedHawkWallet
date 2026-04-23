@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import com.google.firebase.firestore.FirebaseFirestore
 
 class AuthViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -187,7 +188,19 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
     }
+    private suspend fun syncEmailVerificationToFirestore() {
+        val user = FirebaseAuth.getInstance().currentUser ?: return
 
+        user.reload().await()
+
+        if (user.isEmailVerified) {
+            FirebaseFirestore.getInstance()
+                .collection("users")
+                .document(user.uid)
+                .update("isEmailVerified", true)
+                .await()
+        }
+    }
     fun logout() {
         repository.logout()
         _authState.value = null

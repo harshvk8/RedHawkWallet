@@ -1,4 +1,5 @@
 package com.redhawk.wallet
+
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
@@ -10,6 +11,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.rememberNavController
 import com.google.firebase.auth.FirebaseAuth
 import com.redhawk.wallet.data.datasource.FirestoreDataSource
+import com.redhawk.wallet.data.models.SelectedAccountStore
 import com.redhawk.wallet.data.repository.WalletRepository
 import com.redhawk.wallet.feature_auth.AuthViewModel
 import com.redhawk.wallet.nfc.NfcManager
@@ -32,7 +34,6 @@ class MainActivity : ComponentActivity() {
 
         Log.d("APP_START", "MainActivity onCreate")
 
-        // Initialize NFC safely so launch never dies because of NFC
         try {
             nfcManager = NfcManager(this)
             Log.d("APP_START", "NfcManager initialized")
@@ -41,7 +42,6 @@ class MainActivity : ComponentActivity() {
             Log.e("APP_START", "Failed to initialize NfcManager: ${e.message}", e)
         }
 
-        // Seed tokens safely and non-fatally
         seedTokensIfUserExists()
 
         setContent {
@@ -130,11 +130,19 @@ class MainActivity : ComponentActivity() {
 
                         val existing = walletRepo.getWallet(uid)
                         if (existing == null) {
-                            walletRepo.initWallet(uid)
+                            Log.e("NFC", "Wallet not found for user.")
+                            return@launch
                         }
 
-                        walletRepo.tapAndPayWithToken(uid, nfcToken)
-                        Log.d("NFC", "Payment success: -$5, token saved: $nfcToken")
+                        val selectedAccount = SelectedAccountStore(this@MainActivity).get()
+
+                        walletRepo.tapAndPayWithToken(
+                            uid = uid,
+                            token = nfcToken,
+                            accountType = selectedAccount
+                        )
+
+                        Log.d("NFC", "Payment success using $selectedAccount, token saved: $nfcToken")
                     } catch (e: Exception) {
                         Log.e("NFC", "Payment failed: ${e.message}", e)
                     }

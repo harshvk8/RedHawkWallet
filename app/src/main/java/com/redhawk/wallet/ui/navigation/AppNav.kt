@@ -1,5 +1,6 @@
 package com.redhawk.wallet.ui.navigation
 
+import android.app.Application
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -142,7 +143,8 @@ fun AppNav(
         composable(Routes.DASHBOARD) {
             val tapVm: TapToPayViewModel = viewModel(
                 factory = TapToPayViewModelFactory(
-                    WalletRepository(FirestoreDataSource())
+                    application = navController.context.applicationContext as Application,
+                    walletRepo = WalletRepository(FirestoreDataSource())
                 )
             )
 

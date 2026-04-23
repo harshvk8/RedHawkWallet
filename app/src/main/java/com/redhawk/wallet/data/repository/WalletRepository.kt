@@ -40,14 +40,18 @@ class WalletRepository(
         return firestore.getLatestTransactions(uid, 20)
     }
 
-    suspend fun tapAndPay(uid: String): Transactions {
+    suspend fun tapAndPay(uid: String, accountType: AccountType): Transactions {
         require(uid.isNotBlank()) { "uid cannot be blank" }
-        return firestore.tapAndPay(uid)
+        return firestore.tapAndPay(uid, accountType)
     }
 
-    suspend fun tapAndPayWithToken(uid: String, token: String): Transactions {
+    suspend fun tapAndPayWithToken(
+        uid: String,
+        token: String,
+        accountType: AccountType
+    ): Transactions {
         require(uid.isNotBlank()) { "uid cannot be blank" }
         require(token.isNotBlank()) { "token cannot be blank" }
-        return firestore.tapAndPayWithToken(uid, token)
+        return firestore.tapAndPayWithToken(uid, token, accountType)
     }
 }
