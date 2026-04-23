@@ -10,7 +10,7 @@
 
 ### 2. Register with Empty University ID
 - **Input:** University ID left blank
-- **Expected Result:** Error message displayed
+- **Expected Result:** Doesn't allow to register 
 - <img width="200" height="400" alt="Screenshot_2026-04-23-08-19-08-93_76ade46a476e1b32f6086ac784584065 (1)" src="https://github.com/user-attachments/assets/b9ca4ba2-ea82-4963-8ab4-38e5dfb8b76f" />
 
 
