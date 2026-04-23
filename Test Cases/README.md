@@ -4,7 +4,7 @@
 
 ### 1. Register with Empty Full Name
 - **Input:** Full name left blank
-- **Expected Result:** Error message displayed, registration blocked
+- **Expected Result:** Doesn't allow to register 
 - <img width="200" height="400" alt="Screenshot_2026-04-23-08-19-32-58_76ade46a476e1b32f6086ac784584065 (1)" src="https://github.com/user-attachments/assets/b0dce9ec-c70d-455f-87be-8dd61cda6ad3" />
 
 
