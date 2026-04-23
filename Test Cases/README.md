@@ -1,4 +1,4 @@
-# Test Cases- RedHawk Waller  
+# Test Cases- RedHawk Wallet 
 
 ##  Registration Tests
 
