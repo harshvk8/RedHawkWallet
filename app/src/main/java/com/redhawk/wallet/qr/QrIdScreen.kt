@@ -20,6 +20,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -27,12 +29,16 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -51,6 +57,7 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.google.firebase.auth.FirebaseAuth
 import com.redhawk.wallet.ui.navigation.Routes
+import com.redhawk.wallet.ui.theme.ThemeViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -62,24 +69,29 @@ fun QrIdScreen(
     val auth = remember { FirebaseAuth.getInstance() }
     val firebaseUser = auth.currentUser
     val context = LocalContext.current
-
+    val themeViewModel: ThemeViewModel = viewModel()
+    val isDarkMode by themeViewModel.isDarkMode.collectAsState()
 
     var showQr by remember { mutableStateOf(false) }
 
-    val student = vm.userProfile
+    val user = vm.userProfile
     val qrBmp = vm.qrBitmap
     val verificationUi = vm.verificationUi
 
-    val displayName = student.name.ifBlank { firebaseUser?.displayName ?: "Unknown User" }
-    val displayStudentId = student.studentId.ifBlank { "—" }
-    val displayEmail = student.email.ifBlank { firebaseUser?.email ?: "—" }
-    val displayUid = student.uid.ifBlank { firebaseUser?.uid ?: "—" }
+    val displayName = user.name.ifBlank { firebaseUser?.displayName ?: "Unknown User" }
+    val displayId = user.universityId.ifBlank { "—" }
+    val displayEmail = user.email.ifBlank { firebaseUser?.email ?: "—" }
+    val displayUid = user.uid.ifBlank { firebaseUser?.uid ?: "—" }
 
     val red = Color(0xFFC8102E)
-    val redDark = Color(0xFF9E0B22)
-    val border = Color(0xFFE6E6E6)
-    val textColor = Color(0xFF1F1F1F)
-    val muted = Color(0xFF666666)
+    val redDark = Color(0xFF483F48)
+
+    val border = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+    val textColor = MaterialTheme.colorScheme.onSurface
+    val muted = MaterialTheme.colorScheme.onSurfaceVariant
+    val backgroundColor = MaterialTheme.colorScheme.background
+    val surfaceColor = MaterialTheme.colorScheme.surface
+    val surfaceVariantColor = MaterialTheme.colorScheme.surfaceVariant
 
     val pickImage = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -91,11 +103,11 @@ fun QrIdScreen(
     }
 
     LaunchedEffect(Unit) {
-        vm.loadStudentProfile()
+        vm.loadUserProfile()
     }
 
     Scaffold(
-        containerColor = Color.White,
+        containerColor = backgroundColor,
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
@@ -104,6 +116,15 @@ fun QrIdScreen(
                         fontWeight = FontWeight.Bold,
                         color = textColor
                     )
+                },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(
+                            imageVector = Icons.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = textColor
+                        )
+                    }
                 }
             )
         }
@@ -117,7 +138,7 @@ fun QrIdScreen(
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             Card(
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFFAFAFA)),
+                colors = CardDefaults.cardColors(containerColor = surfaceVariantColor),
                 shape = RoundedCornerShape(16.dp),
                 border = BorderStroke(1.dp, border),
                 modifier = Modifier.fillMaxWidth()
@@ -145,9 +166,9 @@ fun QrIdScreen(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        if (!student.photoUrl.isNullOrBlank()) {
+                        if (!user.photoUrl.isNullOrBlank()) {
                             AsyncImage(
-                                model = student.photoUrl,
+                                model = user.photoUrl,
                                 contentDescription = "Profile Photo",
                                 modifier = Modifier
                                     .size(84.dp)
@@ -180,7 +201,7 @@ fun QrIdScreen(
                             )
 
                             Text(
-                                text = displayStudentId,
+                                text = "University ID: $displayId",
                                 color = muted,
                                 style = MaterialTheme.typography.bodyMedium
                             )
@@ -213,6 +234,41 @@ fun QrIdScreen(
                         text = "• Latest photo required at the start of every semester.",
                         color = muted,
                         style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            }
+
+            Card(
+                colors = CardDefaults.cardColors(containerColor = surfaceColor),
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.dp, border),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Dark Mode",
+                            fontWeight = FontWeight.Bold,
+                            color = textColor,
+                            style = MaterialTheme.typography.titleMedium
+                        )
+
+                        Text(
+                            text = "Change the color of the whole application",
+                            color = muted,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+
+                    Switch(
+                        checked = isDarkMode,
+                        onCheckedChange = { themeViewModel.setDarkMode(it) }
                     )
                 }
             }
@@ -253,6 +309,18 @@ fun QrIdScreen(
                 Text("Scan & Verify", fontWeight = FontWeight.Bold)
             }
 
+            OutlinedButton(
+                onClick = {
+                    navController.navigate(Routes.EVENTS_OFFERS)
+                },
+                shape = RoundedCornerShape(14.dp),
+                border = BorderStroke(1.dp, redDark),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = redDark),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Events & Offers", fontWeight = FontWeight.Bold)
+            }
+
             verificationUi?.let { result ->
                 Card(
                     shape = RoundedCornerShape(16.dp),
@@ -260,7 +328,7 @@ fun QrIdScreen(
                         1.dp,
                         if (result.isValid) Color(0xFF2E7D32) else MaterialTheme.colorScheme.error
                     ),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    colors = CardDefaults.cardColors(containerColor = surfaceColor),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(
@@ -275,37 +343,22 @@ fun QrIdScreen(
                         )
 
                         if (result.name.isNotBlank()) {
-                            Text(
-                                text = "Name: ${result.name}",
-                                color = textColor
-                            )
+                            Text(text = "Name: ${result.name}", color = textColor)
                         }
 
                         if (result.role.isNotBlank()) {
-                            Text(
-                                text = "Role: ${result.role}",
-                                color = textColor
-                            )
+                            Text(text = "Role: ${result.role}", color = textColor)
                         }
 
                         if (result.idLabel.isNotBlank()) {
-                            Text(
-                                text = "${result.idLabel}: ${result.idValue}",
-                                color = textColor
-                            )
+                            Text(text = "${result.idLabel}: ${result.idValue}", color = textColor)
                         }
 
                         if (result.email.isNotBlank()) {
-                            Text(
-                                text = "Email: ${result.email}",
-                                color = textColor
-                            )
+                            Text(text = "Email: ${result.email}", color = textColor)
                         }
 
-                        Text(
-                            text = result.message,
-                            color = muted
-                        )
+                        Text(text = result.message, color = muted)
 
                         OutlinedButton(
                             onClick = { vm.clearVerification() },
@@ -321,7 +374,7 @@ fun QrIdScreen(
                 Card(
                     shape = RoundedCornerShape(16.dp),
                     border = BorderStroke(1.dp, border),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    colors = CardDefaults.cardColors(containerColor = surfaceColor),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(
@@ -344,7 +397,7 @@ fun QrIdScreen(
                             } else {
                                 Image(
                                     bitmap = qrBmp.asImageBitmap(),
-                                    contentDescription = "Student QR Code",
+                                    contentDescription = "User QR Code",
                                     modifier = Modifier.fillMaxSize()
                                 )
                             }

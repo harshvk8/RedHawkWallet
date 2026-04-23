@@ -8,7 +8,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
 import com.redhawk.wallet.data.models.UserProfile
@@ -44,13 +46,26 @@ class QrViewModel : ViewModel() {
     var verificationUi by mutableStateOf<VerificationUi?>(null)
         private set
 
-    fun loadStudentProfile() {
+    private fun parseCreatedAt(doc: DocumentSnapshot): Long {
+        val value = doc.get("createdAt")
+        return when (value) {
+            is Timestamp -> value.toDate().time
+            is Long -> value
+            is Int -> value.toLong()
+            is Double -> value.toLong()
+            is Float -> value.toLong()
+            is Number -> value.toLong()
+            else -> 0L
+        }
+    }
+
+    fun loadUserProfile() {
         val currentUser = auth.currentUser ?: run {
             userProfile = UserProfile(
                 uid = "",
                 name = "Not logged in",
                 email = "",
-                studentId = "",
+                universityId = "",
                 photoUrl = null,
                 role = "student",
                 isEmailVerified = false,
@@ -69,16 +84,23 @@ class QrViewModel : ViewModel() {
                     .await()
 
                 if (doc.exists()) {
+                    val role = (doc.getString("role") ?: "student").lowercase()
+
+                    val resolvedUniversityId =
+                        doc.getString("universityId")
+                            ?: doc.getString("studentId")
+                            ?: ""
+
                     userProfile = UserProfile(
                         uid = uid,
-                        name = doc.getString("name") ?: "",
-                        email = doc.getString("email") ?: (currentUser.email ?: ""),
-                        studentId = doc.getString("studentId") ?: "",
+                        name = doc.getString("name") ?: currentUser.displayName.orEmpty(),
+                        email = doc.getString("email") ?: currentUser.email.orEmpty(),
+                        universityId = resolvedUniversityId,
                         photoUrl = doc.getString("photoUrl"),
-                        role = doc.getString("role") ?: "student",
+                        role = role,
                         isEmailVerified = doc.getBoolean("isEmailVerified")
                             ?: currentUser.isEmailVerified,
-                        createdAt = doc.getLong("createdAt") ?: 0L
+                        createdAt = parseCreatedAt(doc)
                     )
                     errorMessage = null
                 } else {
@@ -86,7 +108,7 @@ class QrViewModel : ViewModel() {
                         uid = uid,
                         name = currentUser.displayName ?: "",
                         email = currentUser.email ?: "",
-                        studentId = "",
+                        universityId = "",
                         photoUrl = null,
                         role = "student",
                         isEmailVerified = currentUser.isEmailVerified,
@@ -100,7 +122,7 @@ class QrViewModel : ViewModel() {
                     uid = currentUser.uid,
                     name = currentUser.displayName ?: "",
                     email = currentUser.email ?: "",
-                    studentId = "",
+                    universityId = "",
                     photoUrl = null,
                     role = "student",
                     isEmailVerified = currentUser.isEmailVerified,
@@ -142,43 +164,26 @@ class QrViewModel : ViewModel() {
         if (qrBitmap != null) return
 
         val uid = userProfile.uid
-        val fallbackStudentId = userProfile.studentId
+        val universityId = userProfile.universityId
 
         if (uid.isBlank()) {
             errorMessage = "Cannot generate QR without a valid user."
             return
         }
 
-        viewModelScope.launch {
-            try {
-                val doc = db.collection("users")
-                    .document(uid)
-                    .get()
-                    .await()
+        if (universityId.isBlank()) {
+            errorMessage = "Cannot generate QR without a university ID."
+            return
+        }
 
-                val role = (doc.getString("role") ?: userProfile.role).lowercase()
-                val studentId = doc.getString("studentId") ?: fallbackStudentId
-                val professorId = doc.getString("professorId") ?: ""
-
-                val idForQr = if (role == "professor") {
-                    professorId.ifBlank { studentId }
-                } else {
-                    studentId
-                }
-
-                if (idForQr.isBlank()) {
-                    errorMessage = "Cannot generate QR without an ID."
-                    return@launch
-                }
-
-                val payload = "MSU|$uid|$idForQr"
-                qrBitmap = QrCodeGenerator.generateQrBitmap(payload)
-                errorMessage = null
-            } catch (e: Exception) {
-                Log.e("QrViewModel", "Failed to generate QR", e)
-                qrBitmap = null
-                errorMessage = e.message ?: "QR generation failed."
-            }
+        try {
+            val payload = "MSU|$uid|$universityId"
+            qrBitmap = QrCodeGenerator.generateQrBitmap(payload)
+            errorMessage = null
+        } catch (e: Exception) {
+            Log.e("QrViewModel", "Failed to generate QR", e)
+            qrBitmap = null
+            errorMessage = e.message ?: "QR generation failed."
         }
     }
 
@@ -218,7 +223,7 @@ class QrViewModel : ViewModel() {
         }
 
         val uid = parts[1]
-        val qrId = parts[2]
+        val qrUniversityId = parts[2]
 
         viewModelScope.launch {
             try {
@@ -244,65 +249,48 @@ class QrViewModel : ViewModel() {
                 val name = doc.getString("name") ?: "Unknown User"
                 val email = doc.getString("email") ?: ""
                 val role = (doc.getString("role") ?: "student").lowercase()
-                val studentId = doc.getString("studentId") ?: ""
-                val professorId = doc.getString("professorId") ?: ""
-                val isEmailVerified = doc.getBoolean("isEmailVerified") ?: false
+                val universityId =
+                    doc.getString("universityId")
+                        ?: doc.getString("studentId")
+                        ?: ""
+
+                val scannedUser = auth.currentUser
+                val firebaseVerified =
+                    scannedUser?.uid == uid && scannedUser.isEmailVerified
+
+                val firestoreVerified = doc.getBoolean("isEmailVerified") ?: false
+                val isEmailVerified = firestoreVerified || firebaseVerified
 
                 if (!isEmailVerified) {
                     verificationUi = VerificationUi(
                         isValid = false,
                         title = "Not Verified",
                         name = name,
-                        role = role,
-                        idLabel = if (role == "professor") "Professor ID" else "Student ID",
-                        idValue = if (role == "professor") professorId.ifBlank { studentId } else studentId,
+                        role = role.replaceFirstChar { it.uppercase() },
+                        idLabel = "University ID",
+                        idValue = universityId,
                         email = email,
                         message = "User exists, but email is not verified."
                     )
                     return@launch
                 }
 
-                if (role == "professor") {
-                    val matchedId = when {
-                        professorId.isNotBlank() && qrId == professorId -> professorId
-                        studentId.isNotBlank() && qrId == studentId -> studentId
-                        else -> ""
+                val valid = universityId.isNotBlank() && universityId == qrUniversityId
+
+                verificationUi = VerificationUi(
+                    isValid = valid,
+                    title = if (valid) "Verified User" else "Verification Failed",
+                    name = name,
+                    role = role.replaceFirstChar { it.uppercase() },
+                    idLabel = "University ID",
+                    idValue = universityId,
+                    email = email,
+                    message = if (valid) {
+                        "QR belongs to a registered university user."
+                    } else {
+                        "University ID does not match the QR."
                     }
-
-                    val valid = matchedId.isNotBlank()
-
-                    verificationUi = VerificationUi(
-                        isValid = valid,
-                        title = if (valid) "Verified Professor" else "Professor Verification Failed",
-                        name = name,
-                        role = "Professor",
-                        idLabel = "Professor ID",
-                        idValue = professorId.ifBlank { studentId },
-                        email = email,
-                        message = if (valid) {
-                            "QR belongs to a registered professor."
-                        } else {
-                            "Scanned QR does not match professor records."
-                        }
-                    )
-                } else {
-                    val valid = studentId.isNotBlank() && studentId == qrId
-
-                    verificationUi = VerificationUi(
-                        isValid = valid,
-                        title = if (valid) "Verified Student" else "Student Verification Failed",
-                        name = name,
-                        role = "Student",
-                        idLabel = "Student ID",
-                        idValue = studentId,
-                        email = email,
-                        message = if (valid) {
-                            "QR belongs to a registered student."
-                        } else {
-                            "Student ID does not match the QR."
-                        }
-                    )
-                }
+                )
             } catch (e: Exception) {
                 Log.e("QrViewModel", "Verification failed", e)
                 verificationUi = VerificationUi(

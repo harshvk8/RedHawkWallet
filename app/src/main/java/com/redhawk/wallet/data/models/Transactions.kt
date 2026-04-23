@@ -5,8 +5,8 @@ data class Transactions(
     val uid: String = "",
     val token: String = "",
     val amount: Double = 0.0,
-    val status: String = "success",
-    val type: String = "tap",
-    val note: String = "test",
-    val timestamp: Long = System.currentTimeMillis()
+    val status: String = "",
+    val type: String = "",
+    val note: String = "",
+    val timestamp: Long = 0L
 )
