@@ -2,11 +2,30 @@ package com.redhawk.wallet.ui.screens
 
 import android.widget.Toast
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -80,211 +99,221 @@ fun RegisterScreen(
                 !emailError &&
                 !passwordMatchError
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background
     ) {
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Image(
-            painter = painterResource(id = R.drawable.redhawk_logo),
-            contentDescription = "Logo",
-            modifier = Modifier.size(110.dp)
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Text(
-            text = "Create Account",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.SemiBold
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        OutlinedTextField(
-            value = name,
-            onValueChange = { input ->
-                val filtered = input.filter { it.isLetter() || it == ' ' }
-                name = filtered
-                nameError = filtered.isNotEmpty() && !isValidName(filtered)
-            },
-            label = { Text("Full Name") },
-            singleLine = true,
-            isError = nameError,
-            supportingText = {
-                if (nameError) {
-                    Text("Name must contain letters only")
-                }
-            },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        OutlinedTextField(
-            value = universityId,
-            onValueChange = { input ->
-                val upper = input.uppercase()
-                val filtered = upper.filterIndexed { index, c ->
-                    if (index == 0) c == 'M' || c.isDigit() else c.isDigit()
-                }
-                universityId = filtered.take(9)
-                universityIdError =
-                    universityId.isNotEmpty() && !isValidUniversityId(universityId)
-            },
-            label = { Text("University ID (M########)") },
-            singleLine = true,
-            isError = universityIdError,
-            supportingText = {
-                if (universityIdError) {
-                    Text("Must start with M + 8 digits (example: M12345678)")
-                }
-            },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+                .verticalScroll(rememberScrollState())
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Checkbox(
-                checked = isProfessor,
-                onCheckedChange = { isProfessor = it }
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Image(
+                painter = painterResource(id = R.drawable.redhawk_logo),
+                contentDescription = "Logo",
+                modifier = Modifier.size(110.dp)
             )
-            Text("Register as Professor")
-        }
 
-        Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-        OutlinedTextField(
-            value = email,
-            onValueChange = { input ->
-                email = input.trim()
-                emailError = email.isNotEmpty() && !isValidMontclairEmail(email)
-            },
-            label = { Text("Email (@montclair.edu)") },
-            singleLine = true,
-            isError = emailError,
-            supportingText = {
-                if (emailError) {
-                    Text("Email must end with @montclair.edu")
-                }
-            },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        OutlinedTextField(
-            value = password,
-            onValueChange = { newValue ->
-                password = newValue
-                passwordMatchError = confirmPassword.isNotEmpty() && password != confirmPassword
-            },
-            label = { Text("Password") },
-            singleLine = true,
-            visualTransformation = if (passwordVisible) {
-                VisualTransformation.None
-            } else {
-                PasswordVisualTransformation()
-            },
-            trailingIcon = {
-                TextButton(onClick = { passwordVisible = !passwordVisible }) {
-                    Text(if (passwordVisible) "HIDE" else "SHOW")
-                }
-            },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        if (password.isNotEmpty() && (!hasCapitalLetter || !hasNumber)) {
-            Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Password must include 1 capital letter and 1 number",
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodySmall
+                text = "Create Account",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onBackground
             )
-        }
 
-        Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-        OutlinedTextField(
-            value = confirmPassword,
-            onValueChange = { newValue ->
-                confirmPassword = newValue
-                passwordMatchError = confirmPassword.isNotEmpty() && password != confirmPassword
-            },
-            label = { Text("Confirm Password") },
-            singleLine = true,
-            isError = passwordMatchError,
-            supportingText = {
-                if (passwordMatchError) {
-                    Text("Passwords do not match")
-                }
-            },
-            visualTransformation = if (confirmPasswordVisible) {
-                VisualTransformation.None
-            } else {
-                PasswordVisualTransformation()
-            },
-            trailingIcon = {
-                TextButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
-                    Text(if (confirmPasswordVisible) "HIDE" else "SHOW")
-                }
-            },
-            modifier = Modifier.fillMaxWidth()
-        )
+            OutlinedTextField(
+                value = name,
+                onValueChange = { input ->
+                    val filtered = input.filter { it.isLetter() || it == ' ' }
+                    name = filtered
+                    nameError = filtered.isNotEmpty() && !isValidName(filtered)
+                },
+                label = { Text("Full Name") },
+                singleLine = true,
+                isError = nameError,
+                supportingText = {
+                    if (nameError) {
+                        Text("Name must contain letters only")
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
+            )
 
-        Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-        Button(
-            onClick = {
-                val nameOk = isValidName(name)
-                val idOk = isValidUniversityId(universityId)
-                val emailOk = isValidMontclairEmail(email)
-                val passOk = isPasswordValid
+            OutlinedTextField(
+                value = universityId,
+                onValueChange = { input ->
+                    val upper = input.uppercase()
+                    val filtered = upper.filterIndexed { index, c ->
+                        if (index == 0) c == 'M' || c.isDigit() else c.isDigit()
+                    }
+                    universityId = filtered.take(9)
+                    universityIdError =
+                        universityId.isNotEmpty() && !isValidUniversityId(universityId)
+                },
+                label = { Text("University ID (M########)") },
+                singleLine = true,
+                isError = universityIdError,
+                supportingText = {
+                    if (universityIdError) {
+                        Text("Must start with M + 8 digits (example: M12345678)")
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
+            )
 
-                nameError = !nameOk
-                universityIdError = !idOk
-                emailError = !emailOk
-                passwordMatchError = !passOk
+            Spacer(modifier = Modifier.height(12.dp))
 
-                if (!isFormValid) {
-                    Toast.makeText(
-                        context,
-                        "Please fill in all details correctly before registering",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    return@Button
-                }
-
-                val role = if (isProfessor) "professor" else "student"
-
-                onRegisterClick(
-                    name.trim(),
-                    universityId.trim().uppercase(),
-                    email.trim(),
-                    password,
-                    role
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Checkbox(
+                    checked = isProfessor,
+                    onCheckedChange = { isProfessor = it }
                 )
-            },
-            enabled = isFormValid,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Register")
-        }
+                Text(
+                    text = "Register as Professor",
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+            }
 
-        Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-        TextButton(
-            onClick = onBackToLoginClick
-        ) {
-            Text("Already have an account? Login")
+            OutlinedTextField(
+                value = email,
+                onValueChange = { input ->
+                    email = input.trim()
+                    emailError = email.isNotEmpty() && !isValidMontclairEmail(email)
+                },
+                label = { Text("Email (@montclair.edu)") },
+                singleLine = true,
+                isError = emailError,
+                supportingText = {
+                    if (emailError) {
+                        Text("Email must end with @montclair.edu")
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            OutlinedTextField(
+                value = password,
+                onValueChange = { newValue ->
+                    password = newValue
+                    passwordMatchError = confirmPassword.isNotEmpty() && password != confirmPassword
+                },
+                label = { Text("Password") },
+                singleLine = true,
+                visualTransformation = if (passwordVisible) {
+                    VisualTransformation.None
+                } else {
+                    PasswordVisualTransformation()
+                },
+                trailingIcon = {
+                    TextButton(onClick = { passwordVisible = !passwordVisible }) {
+                        Text(if (passwordVisible) "HIDE" else "SHOW")
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            if (password.isNotEmpty() && (!hasCapitalLetter || !hasNumber)) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Password must include 1 capital letter and 1 number",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            OutlinedTextField(
+                value = confirmPassword,
+                onValueChange = { newValue ->
+                    confirmPassword = newValue
+                    passwordMatchError = confirmPassword.isNotEmpty() && password != confirmPassword
+                },
+                label = { Text("Confirm Password") },
+                singleLine = true,
+                isError = passwordMatchError,
+                supportingText = {
+                    if (passwordMatchError) {
+                        Text("Passwords do not match")
+                    }
+                },
+                visualTransformation = if (confirmPasswordVisible) {
+                    VisualTransformation.None
+                } else {
+                    PasswordVisualTransformation()
+                },
+                trailingIcon = {
+                    TextButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
+                        Text(if (confirmPasswordVisible) "HIDE" else "SHOW")
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Button(
+                onClick = {
+                    val nameOk = isValidName(name)
+                    val idOk = isValidUniversityId(universityId)
+                    val emailOk = isValidMontclairEmail(email)
+                    val passOk = isPasswordValid
+
+                    nameError = !nameOk
+                    universityIdError = !idOk
+                    emailError = !emailOk
+                    passwordMatchError = !passOk
+
+                    if (!isFormValid) {
+                        Toast.makeText(
+                            context,
+                            "Please fill in all details correctly before registering",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        return@Button
+                    }
+
+                    val role = if (isProfessor) "professor" else "student"
+
+                    onRegisterClick(
+                        name.trim(),
+                        universityId.trim().uppercase(),
+                        email.trim(),
+                        password,
+                        role
+                    )
+                },
+                enabled = isFormValid,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Register")
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            TextButton(
+                onClick = onBackToLoginClick
+            ) {
+                Text("Already have an account? Login")
+            }
         }
     }
 }

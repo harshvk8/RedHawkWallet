@@ -85,9 +85,13 @@ fun QrIdScreen(
 
     val red = Color(0xFFC8102E)
     val redDark = Color(0xFF483F48)
-    val border = Color(0xFFE6E6E6)
-    val textColor = Color(0xFF1F1F1F)
-    val muted = Color(0xFF666666)
+
+    val border = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+    val textColor = MaterialTheme.colorScheme.onSurface
+    val muted = MaterialTheme.colorScheme.onSurfaceVariant
+    val backgroundColor = MaterialTheme.colorScheme.background
+    val surfaceColor = MaterialTheme.colorScheme.surface
+    val surfaceVariantColor = MaterialTheme.colorScheme.surfaceVariant
 
     val pickImage = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -103,9 +107,16 @@ fun QrIdScreen(
     }
 
     Scaffold(
-        containerColor = Color.White,
+        containerColor = backgroundColor,
         topBar = {
             CenterAlignedTopAppBar(
+                title = {
+                    Text(
+                        text = "Account Services",
+                        fontWeight = FontWeight.Bold,
+                        color = textColor
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
@@ -114,13 +125,6 @@ fun QrIdScreen(
                             tint = textColor
                         )
                     }
-                },
-                title = {
-                    Text(
-                        text = "Account Services",
-                        fontWeight = FontWeight.Bold,
-                        color = textColor
-                    )
                 }
             )
         }
@@ -134,7 +138,7 @@ fun QrIdScreen(
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             Card(
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFFAFAFA)),
+                colors = CardDefaults.cardColors(containerColor = surfaceVariantColor),
                 shape = RoundedCornerShape(16.dp),
                 border = BorderStroke(1.dp, border),
                 modifier = Modifier.fillMaxWidth()
@@ -235,9 +239,7 @@ fun QrIdScreen(
             }
 
             Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                ),
+                colors = CardDefaults.cardColors(containerColor = surfaceColor),
                 shape = RoundedCornerShape(16.dp),
                 border = BorderStroke(1.dp, border),
                 modifier = Modifier.fillMaxWidth()
@@ -326,7 +328,7 @@ fun QrIdScreen(
                         1.dp,
                         if (result.isValid) Color(0xFF2E7D32) else MaterialTheme.colorScheme.error
                     ),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    colors = CardDefaults.cardColors(containerColor = surfaceColor),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(
@@ -372,7 +374,7 @@ fun QrIdScreen(
                 Card(
                     shape = RoundedCornerShape(16.dp),
                     border = BorderStroke(1.dp, border),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    colors = CardDefaults.cardColors(containerColor = surfaceColor),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(

@@ -20,6 +20,8 @@ import com.redhawk.wallet.nfc.NfcResult
 import com.redhawk.wallet.ui.navigation.AppNav
 import com.redhawk.wallet.ui.theme.RedHawkWalletTheme
 import kotlinx.coroutines.launch
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.collectAsState
 
 class MainActivity : ComponentActivity() {
 
@@ -45,7 +47,10 @@ class MainActivity : ComponentActivity() {
         seedTokensIfUserExists()
 
         setContent {
-            RedHawkWalletTheme {
+            val themeViewModel: com.redhawk.wallet.ui.theme.ThemeViewModel by viewModels()
+            val isDarkMode by themeViewModel.isDarkMode.collectAsState()
+
+            RedHawkWalletTheme(darkTheme = isDarkMode) {
                 val navController = rememberNavController()
                 AppNav(
                     navController = navController,
