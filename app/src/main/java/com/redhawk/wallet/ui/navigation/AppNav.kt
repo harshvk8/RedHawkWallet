@@ -1,10 +1,12 @@
 package com.redhawk.wallet.ui.navigation
 
 import android.app.Application
+import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -106,17 +108,57 @@ fun AppNav(
         }
 
         composable(Routes.REGISTER) {
+            val context = LocalContext.current
             val authState by authViewModel.authState.collectAsState()
 
             LaunchedEffect(authState) {
-                when (authState) {
+                when (val state = authState) {
                     is AuthResult.Success -> {
+                        Toast.makeText(
+                            context,
+                            "Account registered. Please login.",
+                            Toast.LENGTH_SHORT
+                        ).show()
+
                         authViewModel.clearState()
-                        navController.navigate(Routes.EMAIL_VERIFICATION) {
+
+                        navController.navigate(Routes.LOGIN) {
                             popUpTo(Routes.REGISTER) { inclusive = true }
                             launchSingleTop = true
                         }
                     }
+
+                    is AuthResult.Error -> {
+                        val message = state.message.lowercase()
+
+                        if (
+                            message.contains("already") ||
+                            message.contains("email address is already in use") ||
+                            message.contains("account already exists")
+                        ) {
+                            Toast.makeText(
+                                context,
+                                "Account already created. Please login.",
+                                Toast.LENGTH_SHORT
+                            ).show()
+
+                            authViewModel.clearState()
+
+                            navController.navigate(Routes.LOGIN) {
+                                popUpTo(Routes.REGISTER) { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        } else {
+                            Toast.makeText(
+                                context,
+                                state.message,
+                                Toast.LENGTH_SHORT
+                            ).show()
+
+                            authViewModel.clearState()
+                        }
+                    }
+
                     else -> Unit
                 }
             }
