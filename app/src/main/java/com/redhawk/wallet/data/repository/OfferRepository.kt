@@ -1,7 +1,6 @@
 package com.redhawk.wallet.data.repository
 
 import com.redhawk.wallet.data.datasource.FirestoreDataSource
-import com.redhawk.wallet.data.models.Offer
 
 class OfferRepository(
     private val firestore: FirestoreDataSource

@@ -36,7 +36,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.redhawk.wallet.data.models.Event
-import com.redhawk.wallet.data.models.Offer
 import com.redhawk.wallet.events.EventsOffersViewModel
 import com.redhawk.wallet.ui.navigation.Routes
 

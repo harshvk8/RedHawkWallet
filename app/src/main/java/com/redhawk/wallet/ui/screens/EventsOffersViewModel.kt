@@ -5,7 +5,6 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import com.redhawk.wallet.data.models.Event
-import com.redhawk.wallet.data.models.Offer
 import com.redhawk.wallet.data.repository.EventRepository
 import com.redhawk.wallet.data.repository.OfferRepository
 import kotlinx.coroutines.launch

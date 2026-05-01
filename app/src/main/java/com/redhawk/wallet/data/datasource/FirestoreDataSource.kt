@@ -7,7 +7,6 @@ import com.google.firebase.firestore.Query
 import com.redhawk.wallet.data.models.AccountType
 import com.redhawk.wallet.data.models.Transactions
 import com.redhawk.wallet.data.models.UserProfile
-import com.redhawk.wallet.data.models.Wallet
 import kotlinx.coroutines.tasks.await
 import java.util.UUID
 

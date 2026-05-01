@@ -8,7 +8,6 @@ import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import com.redhawk.wallet.data.models.AccountType
 import com.redhawk.wallet.data.models.SelectedAccountStore
-import com.redhawk.wallet.data.models.Wallet
 import com.redhawk.wallet.data.repository.WalletRepository
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
