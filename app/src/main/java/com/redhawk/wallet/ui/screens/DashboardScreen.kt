@@ -130,46 +130,6 @@ fun DashboardScreen(
                 onCardSelected  = { tapVm.selectAccount(it) }
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // ── Gradient refresh button ───────────────────────────────────
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp)
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(
-                        if (!st.loading)
-                            Brush.linearGradient(
-                                colors = listOf(Color(0xFFD94455), Color(0xFF8C0E1A)),
-                                start  = Offset(0f, 0f),
-                                end    = Offset(Float.POSITIVE_INFINITY, 0f)
-                            )
-                        else
-                            Brush.linearGradient(
-                                colors = listOf(Color(0xFF6B3035), Color(0xFF4A1A1E)),
-                                start  = Offset(0f, 0f),
-                                end    = Offset(Float.POSITIVE_INFINITY, 0f)
-                            )
-                    )
-                    .clickable(enabled = !st.loading) { tapVm.loadDashboard() },
-                contentAlignment = Alignment.Center
-            ) {
-                AnimatedContent(
-                    targetState   = st.loading,
-                    transitionSpec = { fadeIn(tween(200)).togetherWith(fadeOut(tween(200))) },
-                    label          = "btnLabel"
-                ) { loading ->
-                    Text(
-                        text       = if (loading) "Refreshing..." else "Refresh Balance",
-                        color      = Color.White,
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize   = 14.sp,
-                        letterSpacing = 0.5.sp
-                    )
-                }
-            }
-
             Spacer(modifier = Modifier.height(12.dp))
 
             AnimatedContent(
