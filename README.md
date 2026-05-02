@@ -333,7 +333,7 @@ Red Hawk Wallet was developed by the team using Android Studio, Kotlin, Jetpack 
 
 During the project, the team also used AI tools such as ChatGPT and Claude as development support resources. These tools were used to help understand errors, review possible solutions, improve documentation, debug code issues, and organize project explanations.
 
-All final code, feature decisions, testing, Firebase integration, GitHub changes, and project implementation were reviewed, modified, and completed by the team. AI tools were used as learning and productivity aids, not as a replacement for the team’s development work.
+The use of AI tools supported our learning and development process, but the final application reflects the team’s own implementation, testing, debugging, integration, and project management work.
 ---
 
 ## Final Note
