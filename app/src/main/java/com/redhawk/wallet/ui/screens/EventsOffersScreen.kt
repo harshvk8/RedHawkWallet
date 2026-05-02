@@ -67,6 +67,7 @@ import androidx.navigation.NavController
 import com.redhawk.wallet.data.models.Event
 import com.redhawk.wallet.events.EventsOffersViewModel
 import com.redhawk.wallet.ui.navigation.Routes
+import com.redhawk.wallet.data.models.Offer
 
 // ── Brand colors ──────────────────────────────────────────────────────────────
 private val HalalYellow  = Color(0xFFF5C518)

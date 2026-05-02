@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import com.redhawk.wallet.data.models.Event
+import com.redhawk.wallet.data.models.Offer
 import com.redhawk.wallet.data.repository.EventRepository
 import com.redhawk.wallet.data.repository.OfferRepository
 import kotlinx.coroutines.launch
@@ -116,6 +117,7 @@ class EventsOffersViewModelFactory(
     private val eventRepository: EventRepository,
     private val offerRepository: OfferRepository
 ) : ViewModelProvider.Factory {
+
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(EventsOffersViewModel::class.java)) {

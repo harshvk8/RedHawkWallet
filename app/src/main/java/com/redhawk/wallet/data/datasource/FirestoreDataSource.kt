@@ -7,6 +7,7 @@ import com.google.firebase.firestore.Query
 import com.redhawk.wallet.data.models.AccountType
 import com.redhawk.wallet.data.models.Transactions
 import com.redhawk.wallet.data.models.UserProfile
+import com.redhawk.wallet.data.models.Wallet
 import kotlinx.coroutines.tasks.await
 import java.util.UUID
 
@@ -41,6 +42,7 @@ class FirestoreDataSource(
 
     suspend fun getWallet(uid: String): Wallet? {
         val snap = db.collection("wallets").document(uid).get().await()
+
         Log.d("WalletDebug", "wallet exists = ${snap.exists()}")
         Log.d("WalletDebug", "wallet data = ${snap.data}")
 
@@ -134,6 +136,7 @@ class FirestoreDataSource(
 
         return db.runTransaction { transaction ->
             val walletSnap = transaction.get(walletRef)
+
             val currentBalance = when (accountType) {
                 AccountType.RED_HAWK_DOLLARS -> readNumber(
                     walletSnap,
@@ -142,21 +145,17 @@ class FirestoreDataSource(
                     "redHawkWallets",
                     "Red Hawk Dollars"
                 )
+
                 AccountType.FLEX -> readNumber(walletSnap, "flex", "Flex")
                 AccountType.BONUS -> readNumber(walletSnap, "bonus", "Bonus")
                 AccountType.MEAL_SWIPES -> readNumber(walletSnap, "mealSwipes", "Meal Swipes")
             }
-
-            Log.d("TapDebug", "tapAndPayWithToken accountType = $accountType")
-            Log.d("TapDebug", "tapAndPayWithToken balanceField = $balanceField")
-            Log.d("TapDebug", "tapAndPayWithToken currentBalance = $currentBalance")
 
             if (currentBalance < amountToDeduct) {
                 throw IllegalStateException("Insufficient ${getAccountLabel(accountType)} balance")
             }
 
             val newBalance = currentBalance - amountToDeduct
-            Log.d("TapDebug", "tapAndPayWithToken newBalance = $newBalance")
 
             transaction.update(
                 walletRef,
@@ -198,6 +197,7 @@ class FirestoreDataSource(
 
         return db.runTransaction { transaction ->
             val walletSnap = transaction.get(walletRef)
+
             val currentBalance = when (accountType) {
                 AccountType.RED_HAWK_DOLLARS -> readNumber(
                     walletSnap,
@@ -206,21 +206,17 @@ class FirestoreDataSource(
                     "redHawkWallets",
                     "Red Hawk Dollars"
                 )
+
                 AccountType.FLEX -> readNumber(walletSnap, "flex", "Flex")
                 AccountType.BONUS -> readNumber(walletSnap, "bonus", "Bonus")
                 AccountType.MEAL_SWIPES -> readNumber(walletSnap, "mealSwipes", "Meal Swipes")
             }
-
-            Log.d("TapDebug", "tapAndPay accountType = $accountType")
-            Log.d("TapDebug", "tapAndPay balanceField = $balanceField")
-            Log.d("TapDebug", "tapAndPay currentBalance = $currentBalance")
 
             if (currentBalance < amountToDeduct) {
                 throw IllegalStateException("Insufficient ${getAccountLabel(accountType)} balance")
             }
 
             val newBalance = currentBalance - amountToDeduct
-            Log.d("TapDebug", "tapAndPay newBalance = $newBalance")
 
             transaction.update(
                 walletRef,

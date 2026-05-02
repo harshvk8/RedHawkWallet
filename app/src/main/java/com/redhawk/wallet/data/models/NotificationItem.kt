@@ -8,10 +8,3 @@ data class NotificationItem(
     val timestamp: Long = 0L
 )
 
-data class NotificationItem(
-    val id: String = "",
-    val title: String = "",
-    val message: String = "",
-    val read: Boolean = false,
-    val timestamp: Long = 0L
-)
