@@ -312,11 +312,13 @@ This project helped the team learn real-world software development skills, inclu
 ---
 
 
-## Resources and Tools Used
+---
 
-During the development of Red Hawk Wallet, the team used several resources and tools to support coding, debugging, writing, testing, and project organization.
+## Resources and Development Support
 
-### Development Tools
+Red Hawk Wallet was developed by the team using Android Studio, Kotlin, Jetpack Compose, Firebase, Git, and GitHub. The team was responsible for designing the application flow, writing and modifying the code, integrating Firebase services, testing features, resolving merge conflicts, debugging issues, and preparing the final working version of the app.
+
+### Development Tools Used
 
 - Android Studio
 - Kotlin
@@ -327,16 +329,11 @@ During the development of Red Hawk Wallet, the team used several resources and t
 - Git
 - GitHub
 
-### AI Assistance and Learning Resources
+### AI-Assisted Development Support
 
-The team also used AI tools as learning and development support during the project. These tools helped with debugging errors, understanding Android/Firebase concepts, improving code structure, writing documentation, generating ideas, and polishing project explanations.
+During the project, the team also used AI tools such as ChatGPT and Claude as development support resources. These tools were used to help understand errors, review possible solutions, improve documentation, debug code issues, and organize project explanations.
 
-AI tools used included:
-
-- ChatGPT
-- Claude
-
-AI tools were used as support resources, but the team was responsible for reviewing, testing, modifying, and integrating the final code into the project.
+All final code, feature decisions, testing, Firebase integration, GitHub changes, and project implementation were reviewed, modified, and completed by the team. AI tools were used as learning and productivity aids, not as a replacement for the team’s development work.
 ---
 
 ## Final Note
