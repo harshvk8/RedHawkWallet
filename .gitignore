@@ -13,3 +13,23 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# --- Firebase / secrets (added) ---
+# Firebase config: identifies the project and is restricted by Security
+# Rules + App Check rather than by being hidden, but it's still best
+# practice to keep it out of version control.
+google-services.json
+app/google-services.json
+GoogleService-Info.plist
+
+# Service-account / admin keys — these ARE true secrets, never commit them
+*service-account*.json
+*-firebase-adminsdk-*.json
+
+# API keys / env files
+*.keystore
+*.jks
+secrets.properties
+keystore.properties
+.env
+.env.*
